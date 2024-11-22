@@ -12,3 +12,22 @@
    # install the requirements
    pip install -r requirements.txt
    ```
+
+3) Run the experiments
+   ```bash
+    # run the experiments
+    python main.py
+    ```
+
+4) Visualize the results using tensorboard
+   ```bash
+   tensorboard --logdir tb_data --port 6066
+   ```
+
+   Open tensorboard in your browser at `localhost:6066`
+
+
+## Short Introduction to Avalanche
+
+![Antonio Carta | "Avalanche: an End-to-End Library for Continual Learning"
+](https://www.youtube.com/watch?v=n6mykeLdeg0)
