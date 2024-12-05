@@ -1,2 +1,2 @@
-avalanche-lib
-torch
+avalanche-lib~=0.6.0
+torch~=2.5.1

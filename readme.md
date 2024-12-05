@@ -6,8 +6,8 @@
 2) Install the requirements
    ```bash
    # create and activate a virtual environment
-   python3 -m venv venv
-   source venv/bin/activate
+   python3 -m venv .venv
+   source .venv/bin/activate
    
    # install the requirements
    pip install -r requirements.txt
@@ -25,7 +25,6 @@
    ```
 
    Open tensorboard in your browser at `localhost:6066`
-
 
 ## Short Introduction to Avalanche
 

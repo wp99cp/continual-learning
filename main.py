@@ -1,91 +1,10 @@
 import argparse
 
-import torch
-import torch.optim.lr_scheduler
-from avalanche.benchmarks import SplitCIFAR100
-from avalanche.models import SlimResNet18
-from avalanche.training.supervised import FromScratchTraining, Naive
-from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
-
-from utils import get_evaluator
+from geometric_aware_sampling.experiments import baseline
+from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 
 
-def main(cuda: int):
-    device = torch.device(f"cuda:{cuda}" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-
-    benchmark = SplitCIFAR100(
-        n_experiences=5,
-        seed=42,
-        return_task_id=False,
-
-    )
-
-    model = SlimResNet18(nclasses=100)
-    optimizer = Adam(model.parameters(), lr=0.001)
-    model.compile()
-
-    model1 = SlimResNet18(nclasses=100)
-    optimizer1 = Adam(model1.parameters(), lr=0.001)
-    model1.compile()
-
-    criterion = CrossEntropyLoss()
-
-    cl_strategies = [
-
-        Naive(
-
-            # model and optimizer (normal PyTorch modules)
-            model=model,
-            optimizer=optimizer,
-            criterion=criterion,
-
-            # number of training epochs per experience
-            train_epochs=15,
-
-            # batch sizes
-            train_mb_size=32,
-            eval_mb_size=32,
-
-            device=device,
-            evaluator=get_evaluator(),
-        ),
-
-        FromScratchTraining(
-
-            # model and optimizer (normal PyTorch modules)
-            model=model1,
-            optimizer=optimizer1,
-            criterion=criterion,
-
-            # number of training epochs per experience
-            train_epochs=15,
-
-            # batch sizes
-            train_mb_size=32,
-            eval_mb_size=32,
-
-            device=device,
-            evaluator=get_evaluator(),
-        )
-    ]
-
-    # TRAINING LOOP
-    for i, experience in enumerate(benchmark.train_stream, 1):
-            print(f"Start of experience {i} of {benchmark.n_experiences}")
-            print("Current Classes:", experience.classes_in_this_experience)
-
-            for i, cl_strategy in enumerate(cl_strategies, 1):
-                print(f" » {cl_strategy.__class__.__name__} strategy")
-
-                cl_strategy.train(experience)
-                cl_strategy.eval(benchmark.test_stream[:i])
-
-            print("End of experience %d\n" % i)
-
-
-if __name__ == "__main__":
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--cuda",
@@ -93,10 +12,20 @@ if __name__ == "__main__":
         default=0,
         help="Select zero-indexed cuda device. -1 to use CPU.",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    print(f"Has CUDA: {torch.cuda.is_available()}")
-    print(f"CUDA Device Count: {torch.cuda.device_count()}")
-    print(f"Current Device Device Name: '{torch.cuda.get_device_name()}'")
 
-    main(args.cuda)
+def main():
+    args = parse_arguments()
+    print_hardware_info(args)
+
+    # #########################
+    # Start the experiment(s)
+    # #########################
+
+    # You can modify the following line to run different experiments.
+    baseline.run(args)
+
+
+if __name__ == "__main__":
+    main()
