@@ -1,6 +1,6 @@
-# Continual Learning
+# Geometry-Aware Sampling for Class-Incremental Learning
 
-## Getting Started
+## Reproduce the Experiments
 
 1) Clone the repository
 2) Install the requirements
@@ -26,7 +26,9 @@
 
    Open tensorboard in your browser at `localhost:6066`
 
-## Short Introduction to Avalanche
+## Development / Debugging
+
+### Short Introduction to Avalanche
 
 [YouTube: Antonio Carta | "Avalanche: an End-to-End Library for Continual Learning"
 ](https://www.youtube.com/watch?v=n6mykeLdeg0)
