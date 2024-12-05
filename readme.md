@@ -28,5 +28,5 @@
 
 ## Short Introduction to Avalanche
 
-![Antonio Carta | "Avalanche: an End-to-End Library for Continual Learning"
+[YouTube: Antonio Carta | "Avalanche: an End-to-End Library for Continual Learning"
 ](https://www.youtube.com/watch?v=n6mykeLdeg0)
