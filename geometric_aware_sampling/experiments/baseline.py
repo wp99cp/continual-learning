@@ -4,7 +4,7 @@ import torch
 import torch.optim.lr_scheduler
 from avalanche.benchmarks import SplitCIFAR100
 from avalanche.models import SlimResNet18
-from avalanche.training.supervised import FromScratchTraining, Naive
+from avalanche.training.supervised import FromScratchTraining
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 
@@ -23,62 +23,39 @@ def run(args: argparse.Namespace):
 
     model = SlimResNet18(nclasses=100)
     optimizer = Adam(model.parameters(), lr=0.001)
-    model.compile()
-
-    model1 = SlimResNet18(nclasses=100)
-    optimizer1 = Adam(model1.parameters(), lr=0.001)
-    model1.compile()
-
     criterion = CrossEntropyLoss()
 
-    cl_strategies = [
+    # compile the model to speed up training
+    model.compile()
 
-        Naive(
+    cl_strategy = FromScratchTraining(
 
-            # model and optimizer (normal PyTorch modules)
-            model=model,
-            optimizer=optimizer,
-            criterion=criterion,
+        # model and optimizer (normal PyTorch modules)
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
 
-            # number of training epochs per experience
-            train_epochs=15,
+        # number of training epochs per experience
+        train_epochs=2,
 
-            # batch sizes
-            train_mb_size=32,
-            eval_mb_size=32,
+        # batch sizes
+        train_mb_size=32,
+        eval_mb_size=32,
 
-            device=device,
-            evaluator=get_evaluator(),
-        ),
+        device=device,
+        evaluator=get_evaluator(),
+    )
 
-        FromScratchTraining(
-
-            # model and optimizer (normal PyTorch modules)
-            model=model1,
-            optimizer=optimizer1,
-            criterion=criterion,
-
-            # number of training epochs per experience
-            train_epochs=15,
-
-            # batch sizes
-            train_mb_size=32,
-            eval_mb_size=32,
-
-            device=device,
-            evaluator=get_evaluator(),
-        )
-    ]
+    print("\n\nStart Experiment Run\n")
 
     # TRAINING LOOP
     for i, experience in enumerate(benchmark.train_stream, 1):
-        print(f"Start of experience {i} of {benchmark.n_experiences}")
-        print("Current Classes:", experience.classes_in_this_experience)
+        print(f"Experience {i} of {benchmark.n_experiences}")
+        print("Current classes:", experience.classes_in_this_experience)
+        print(f" » {cl_strategy.__class__.__name__} strategy")
 
-        for i, cl_strategy in enumerate(cl_strategies, 1):
-            print(f" » {cl_strategy.__class__.__name__} strategy")
+        print("\n")
+        cl_strategy.train(experience)
+        cl_strategy.eval(benchmark.test_stream[:i])
 
-            cl_strategy.train(experience)
-            cl_strategy.eval(benchmark.test_stream[:i])
-
-        print("End of experience %d\n" % i)
+        print("\nEnd of experience %d\n\n" % i)
