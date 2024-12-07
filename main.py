@@ -18,9 +18,15 @@ def parse_arguments() -> argparse.Namespace:
 def main():
     args = parse_arguments()
 
+    settings = {
+        "args": args,
+        "dataset_name": "split_cifar100",  # "split_cifar100" or "split_mnist"
+        "model_name": "slim_resnet18",  # "slim_resnet18"
+    }
+
     experiments = [NaiveBaseline, ReplayBaseline]
     for i, experiment in enumerate(experiments):
-        experiment = experiment(args)
+        experiment = experiment(**settings)
         experiment.run()
 
 
