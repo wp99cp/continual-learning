@@ -4,7 +4,8 @@ from torch import cuda
 
 
 def print_hardware_info(args):
-    print(f"""
+    print(
+        f"""
 
 **********************************************************
 * Geometry-Aware Sampling for Class-Incremental Learning *
@@ -18,4 +19,5 @@ Starting experiment with the following configuration:
 **********************************************************
 
 
-    """)
+    """
+    )

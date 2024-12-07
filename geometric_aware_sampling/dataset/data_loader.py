@@ -1,8 +1,12 @@
-from avalanche.benchmarks import SplitMNIST, SplitCIFAR100
+from avalanche.benchmarks import SplitCIFAR100, SplitMNIST
+from avalanche.logging import TensorboardLogger
 from matplotlib import pyplot as plt
 
 
-def save_example_data(dataset, filename):
+def save_example_data(
+    dataset,
+    tensorboard_logger: TensorboardLogger,
+):
     fig, axs = plt.subplots(1, 3, figsize=(10, 3))
 
     for i, (x, y, t) in enumerate(dataset):
@@ -14,14 +18,11 @@ def save_example_data(dataset, filename):
         ax.axis("off")
 
     plt.tight_layout()
-    plt.savefig(filename)
-    plt.close()
-
-    print(f"\n ==> Example data saved to {filename}")
+    tensorboard_logger.writer.add_figure("example_data", fig, global_step=0, close=True)
 
 
 def print_stream_summary(stream):
-    print(f'\n--- Stream: {stream.name}')
+    print(f"\n--- Stream: {stream.name}")
     for exp in stream:
         eid = exp.current_experience
         clss = exp.classes_in_this_experience
@@ -31,9 +32,9 @@ def print_stream_summary(stream):
 
 
 def load_dataset(
-        dataset_name: str,
-        print_summary: bool = True,
-        save_example_input: bool = True
+    dataset_name: str,
+    print_summary: bool = True,
+    tensorboard_logger: TensorboardLogger = None,
 ):
     shared_base_args = {
         "n_experiences": 5,  # 5 incremental experiences
@@ -65,13 +66,18 @@ def load_dataset(
     # example data
     ###################################
 
-    if save_example_input:
-        print(f"\n###############\nExample training data for the first experience:\n###############\n")
-        for i, (x, y, t) in enumerate(bm.train_stream[0].dataset):
-            print(f"  - x.shape={x.shape}, y={y}, t={t}")
-            if i > 2:
-                break
+    print(
+        f"\n###############\nExample training data for the first experience:\n###############\n"
+    )
 
-        save_example_data(bm.train_stream[0].dataset, "example_data.png")
+    for i, (x, y, t) in enumerate(bm.train_stream[0].dataset):
+        print(f"  - x.shape={x.shape}, y={y}, t={t}")
+        if i > 2:
+            break
+
+    if tensorboard_logger is not None:
+        save_example_data(bm.train_stream[0].dataset, tensorboard_logger)
+    else:
+        print("No tensorboard logger provided, skipping example data visualization")
 
     return bm

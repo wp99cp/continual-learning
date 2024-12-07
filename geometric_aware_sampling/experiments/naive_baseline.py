@@ -13,19 +13,15 @@ class NaiveBaseline(BaseExperiment):
 
     def create_cl_strategy(self):
         return Naive(
-
             # model and optimizer (normal PyTorch modules)
             model=self.model,
             optimizer=self.optimizer,
             criterion=self.criterion,
-
             # number of training epochs per experience
             train_epochs=1,
-
             # batch sizes
             train_mb_size=16,
             eval_mb_size=16,
-
             device=self.device,
-            evaluator=self.eval_plugin
+            evaluator=self.eval_plugin,
         )

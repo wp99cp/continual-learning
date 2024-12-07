@@ -2,9 +2,9 @@ from geometric_aware_sampling.models.SlimResNet18 import SlimResNet18
 
 
 def load_model(
-        model_name: str = "slim_resnet18",
-        cl_dataset=None,
-        compile_model: bool = True,
+    model_name: str = "slim_resnet18",
+    cl_dataset=None,
+    compile_model: bool = True,
 ):
     if cl_dataset is None:
         raise ValueError("cl_dataset must be provided to load_model")

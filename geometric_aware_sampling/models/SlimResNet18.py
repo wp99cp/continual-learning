@@ -8,7 +8,7 @@ https://github.com/ContinualAI/avalanche/blob/master/avalanche/models/slim_resne
 """
 
 import torch.nn as nn
-from torch.nn.functional import relu, avg_pool2d
+from torch.nn.functional import avg_pool2d, relu
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -89,6 +89,6 @@ class ResNet(nn.Module):
         return out
 
 
-def SlimResNet18(nclasses, nf=20, input_dim=( 1, 28, 28)):
+def SlimResNet18(nclasses, nf=20, input_dim=(1, 28, 28)):
     """Slimmed ResNet18."""
     return ResNet(BasicBlock, [2, 2, 2, 2], nclasses, nf, input_dim)

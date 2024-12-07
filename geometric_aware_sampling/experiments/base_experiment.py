@@ -1,7 +1,9 @@
 import argparse
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import torch
+from avalanche.logging import TensorboardLogger
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 
@@ -18,10 +20,10 @@ class BaseExperiment(ABC):
     """
 
     def __init__(
-            self,
-            args: argparse.Namespace,
-            dataset_name: str = "split_mnist",
-            model_name: str = "slim_resnet18",
+        self,
+        args: argparse.Namespace,
+        dataset_name: str = "split_mnist",
+        model_name: str = "slim_resnet18",
     ):
         """
         Initialize the experiment
@@ -35,15 +37,20 @@ class BaseExperiment(ABC):
         self.dataset_name = dataset_name
         self.model_name = model_name
 
-        self.device = torch.device(f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
+        )
 
         # set the default precision for matrix multiplication to high
-        torch.set_float32_matmul_precision('high')
+        torch.set_float32_matmul_precision("high")
 
         # initialize the continual learning strategy and dataset
         self.cl_strategy = None
         self.cl_dataset = None
         self.model = None
+
+        # define the tensorboard logger
+        self.tensorboard_logger = TensorboardLogger(f"tb_data/{datetime.now()}")
 
         self.__setup__()
 
@@ -55,7 +62,7 @@ class BaseExperiment(ABC):
         self.cl_dataset = load_dataset(
             self.dataset_name,
             print_summary=True,  # print summary statistics of the dataset / experience
-            save_example_input=True  # save example data to a file
+            tensorboard_logger=self.tensorboard_logger,
         )
 
         self.model = load_model(
@@ -64,10 +71,7 @@ class BaseExperiment(ABC):
         )
 
         self.optimizer = Adam(
-            self.model.parameters(),
-            betas=(0.9, 0.999),
-            lr=0.001,
-            weight_decay=1e-5
+            self.model.parameters(), betas=(0.9, 0.999), lr=0.001, weight_decay=1e-5
         )
 
         self.criterion = CrossEntropyLoss()
@@ -76,7 +80,9 @@ class BaseExperiment(ABC):
         # Continual Learning Strategy
         ###################################
 
-        self.eval_plugin = get_evaluator(self.cl_dataset.n_classes)
+        self.eval_plugin = get_evaluator(
+            self.cl_dataset.n_classes, [self.tensorboard_logger]
+        )
         self.cl_strategy = self.create_cl_strategy()
 
     @abstractmethod
@@ -102,7 +108,8 @@ class BaseExperiment(ABC):
 
         for i, experience in enumerate(self.cl_dataset.train_stream, 1):
             print(
-                f"\n - Experience {i} / {self.cl_dataset.n_experiences} with classes {experience.classes_in_this_experience}")
+                f"\n - Experience {i} / {self.cl_dataset.n_experiences} with classes {experience.classes_in_this_experience}"
+            )
 
             self.cl_strategy.train(experience)
 
