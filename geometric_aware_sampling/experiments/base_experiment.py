@@ -1,5 +1,5 @@
 import argparse
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from datetime import datetime
 
 import torch
@@ -10,9 +10,11 @@ from torch.optim import Adam
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
 from geometric_aware_sampling.models.model_loader import load_model
+from geometric_aware_sampling.utils.hardware_info import print_hardware_info
+from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
 
-class BaseExperiment(ABC):
+class BaseExperiment(metaclass=LogEnabledABC):
     """
 
     Abstract Base class for all experiments
@@ -49,12 +51,13 @@ class BaseExperiment(ABC):
         self.cl_dataset = None
         self.model = None
 
-        # define the tensorboard logger
         self.tensorboard_logger = TensorboardLogger(f"tb_data/{datetime.now()}")
 
         self.__setup__()
 
     def __setup__(self):
+        print_hardware_info(self.args)
+
         ###################################
         # Load the dataset and model
         ###################################
