@@ -18,30 +18,8 @@ def parse_arguments() -> argparse.Namespace:
 def main():
     args = parse_arguments()
 
-    # #########################
-    # Run the Experiment(s)
-    # #########################
-
-    experiments = [
-        NaiveBaseline,
-        ReplayBaseline,
-    ]
-
+    experiments = [NaiveBaseline, ReplayBaseline]
     for i, experiment in enumerate(experiments):
-
-        print(
-            f"""
-            
-################################################
-################################################
-#
-#   Running {experiment.__name__}... ({i + 1}/{len(experiments)})
-#
-################################################
-################################################
-
-            """
-        )
         experiment = experiment(args)
         experiment.run()
 

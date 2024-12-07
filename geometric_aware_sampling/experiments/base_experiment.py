@@ -53,6 +53,7 @@ class BaseExperiment(metaclass=LogEnabledABC):
 
         self.tensorboard_logger = TensorboardLogger(f"tb_data/{datetime.now()}")
 
+        self.__print_model_name()
         self.__setup__()
 
     def __setup__(self):
@@ -87,6 +88,21 @@ class BaseExperiment(metaclass=LogEnabledABC):
             self.cl_dataset.n_classes, [self.tensorboard_logger, InteractiveLogger()]
         )
         self.cl_strategy = self.create_cl_strategy()
+
+    def __print_model_name(self):
+        print(
+            f"""
+
+################################################
+################################################
+#
+#   {self.__class__.__name__}
+#
+################################################
+################################################
+
+                    """
+        )
 
     @abstractmethod
     def create_cl_strategy(self):
