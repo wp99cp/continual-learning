@@ -3,7 +3,7 @@ from abc import abstractmethod
 from datetime import datetime
 
 import torch
-from avalanche.logging import TensorboardLogger
+from avalanche.logging import TensorboardLogger, InteractiveLogger
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 
@@ -84,7 +84,7 @@ class BaseExperiment(metaclass=LogEnabledABC):
         ###################################
 
         self.eval_plugin = get_evaluator(
-            self.cl_dataset.n_classes, [self.tensorboard_logger]
+            self.cl_dataset.n_classes, [self.tensorboard_logger, InteractiveLogger()]
         )
         self.cl_strategy = self.create_cl_strategy()
 

@@ -1,3 +1,4 @@
+import re
 import sys
 import threading
 import time
@@ -12,32 +13,58 @@ class TensorBoardLogger:
         """
         Args:
             class_context: The class object that contains the tensorboard_logger attribute.
+            method_name: A string identifier for the TensorBoard log entry.
             buffer_time: The interval (in seconds) to flush the buffer and forward the data.
         """
-        self.forward_thread = None
         self.class_context = class_context
-        self.buffer_time = buffer_time
-        self.buffer = StringIO()
-        self.lock = threading.Lock()
-        self.running = False
-
-        self.wall_time = time.time()
         self.method_name = method_name
+        self.buffer_time = buffer_time
+
+        self.stdout_buffer = StringIO()
+        self.stderr_buffer = StringIO()
+        self.stdout_lock = threading.Lock()
+        self.stderr_lock = threading.Lock()
+
+        self.running = False
+        self.wall_time = time.time()
         self.step_counter = 0
 
-    def write(self, message):
-        with self.lock:
-            self.buffer.write(message)
-            self.buffer.flush()
+        self.forward_thread = None
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
 
-    def isatty(self):
-        return False  # Mimics the behavior of a non-terminal file-like object.
+        self.tqdm_regex = re.compile(r"\r.*")  # Detect tqdm-style carriage returns
 
-    def flush(self):
-        pass  # Required for `sys.stdout` compatibility.
+    def write_stdout(self, message):
+        """Handle stdout messages."""
+        if self.tqdm_regex.match(message):
+            # Pass tqdm-style updates directly to the original stdout
+            self._original_stdout.write(message)
+            self._original_stdout.flush()
+        else:
+            self._original_stdout.write(message)
+            with self.stdout_lock:
+                self.stdout_buffer.write(message)
+
+    def write_stderr(self, message):
+        """Handle stderr messages."""
+        if self.tqdm_regex.match(message):
+            # Pass tqdm-style updates directly to the original stderr
+            self._original_stderr.write(message)
+            self._original_stderr.flush()
+        else:
+            self._original_stderr.write(message)
+            with self.stderr_lock:
+                self.stderr_buffer.write(message)
+
+    def flush_stdout(self):
+        self._original_stdout.flush()
+
+    def flush_stderr(self):
+        self._original_stderr.flush()
 
     def start_forwarding(self):
-        """Start the background thread to forward logs periodically."""
+        """Start the background thread to periodically flush logs."""
         self.running = True
         self.forward_thread = threading.Thread(
             target=self._forward_periodically, daemon=True
@@ -57,30 +84,55 @@ class TensorBoardLogger:
             self._flush_to_tensorboard()
 
     def _flush_to_tensorboard(self):
-        with self.lock:
-            output = self.buffer.getvalue()
-
-            # print to self._stdout
-            print(output, end="", flush=True, file=self._stdout)
-
-            if output.strip():  # Avoid empty logs.
+        """Flush logs from buffers to TensorBoard."""
+        with self.stdout_lock:
+            stdout_output = self.stdout_buffer.getvalue()
+            if stdout_output.strip():
                 self.class_context.tensorboard_logger.writer.add_text(
-                    f"{self.wall_time}_{self.method_name}",
-                    output,
+                    f"{self.wall_time}_{self.method_name}_stdout",
+                    stdout_output,
                     global_step=self.step_counter,
                 )
                 self.step_counter += 1
-                self.buffer = StringIO()  # Reset buffer.
+                self.stdout_buffer = StringIO()
+
+        with self.stderr_lock:
+            stderr_output = self.stderr_buffer.getvalue()
+            if stderr_output.strip():
+                self.class_context.tensorboard_logger.writer.add_text(
+                    f"{self.wall_time}_{self.method_name}_stderr",
+                    stderr_output,
+                    global_step=self.step_counter,
+                )
+                self.step_counter += 1
+                self.stderr_buffer = StringIO()
 
     def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = self
+        sys.stdout = self  # Redirect stdout
+        sys.stderr = self  # Redirect stderr
         self.start_forwarding()
         return self
 
     def __exit__(self, *args):
         self.stop_forwarding()
-        sys.stdout = self._stdout
+        sys.stdout = self._original_stdout  # Restore stdout
+        sys.stderr = self._original_stderr  # Restore stderr
+
+    def write(self, message):
+        """Split writes between stdout and stderr."""
+        if sys.stdout == self:
+            self.write_stdout(message)
+        elif sys.stderr == self:
+            self.write_stderr(message)
+
+    def flush(self):
+        """Flush both stdout and stderr."""
+        self.flush_stdout()
+        self.flush_stderr()
+
+    def isatty(self):
+        """Return True to indicate that this stream is a terminal."""
+        return self._original_stdout.isatty()
 
 
 def enableLogging(method):
