@@ -17,7 +17,7 @@ def save_example_data(dataset, filename):
     plt.savefig(filename)
     plt.close()
 
-    print(f"Example data saved to {filename}")
+    print(f"\n ==> Example data saved to {filename}")
 
 
 def print_stream_summary(stream):

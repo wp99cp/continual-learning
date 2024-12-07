@@ -1,6 +1,6 @@
 import argparse
 
-from geometric_aware_sampling.experiments import baseline
+from geometric_aware_sampling.experiments.naive_baseline import NaiveBaseline
 from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 
 
@@ -20,11 +20,11 @@ def main():
     print_hardware_info(args)
 
     # #########################
-    # Start the experiment(s)
+    # Run the Experiment(s)
     # #########################
 
-    # You can modify the following line to run different experiments.
-    baseline.run(args)
+    baseline_naive = NaiveBaseline(args)
+    baseline_naive.run()
 
 
 if __name__ == "__main__":
