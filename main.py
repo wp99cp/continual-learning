@@ -1,7 +1,7 @@
 import argparse
 
-from geometric_aware_sampling.experiments import baseline
-from geometric_aware_sampling.utils.hardware_info import print_hardware_info
+from geometric_aware_sampling.experiments.naive_baseline import NaiveBaseline
+from geometric_aware_sampling.experiments.replay_baseline import ReplayBaseline
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -17,14 +17,17 @@ def parse_arguments() -> argparse.Namespace:
 
 def main():
     args = parse_arguments()
-    print_hardware_info(args)
 
-    # #########################
-    # Start the experiment(s)
-    # #########################
+    settings = {
+        "args": args,
+        "dataset_name": "split_cifar100",  # "split_cifar100" or "split_mnist"
+        "model_name": "slim_resnet18",  # "slim_resnet18"
+    }
 
-    # You can modify the following line to run different experiments.
-    baseline.run(args)
+    experiments = [NaiveBaseline, ReplayBaseline]
+    for i, experiment in enumerate(experiments):
+        experiment = experiment(**settings)
+        experiment.run()
 
 
 if __name__ == "__main__":
