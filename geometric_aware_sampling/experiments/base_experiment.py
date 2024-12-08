@@ -1,6 +1,6 @@
 import argparse
+import datetime
 from abc import abstractmethod
-from datetime import datetime
 
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
@@ -14,7 +14,7 @@ from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
 
-class BaseExperiment(metaclass=LogEnabledABC):
+class BaseExperimentStrategy(metaclass=LogEnabledABC):
     """
 
     Abstract Base class for all experiments
@@ -26,6 +26,8 @@ class BaseExperiment(metaclass=LogEnabledABC):
         args: argparse.Namespace,
         dataset_name: str = "split_mnist",
         model_name: str = "slim_resnet18",
+        batch_size: int = 16,
+        train_epochs: int = 5,
     ):
         """
         Initialize the experiment
@@ -38,6 +40,8 @@ class BaseExperiment(metaclass=LogEnabledABC):
         self.args = args
         self.dataset_name = dataset_name
         self.model_name = model_name
+        self.batch_size = batch_size
+        self.train_epochs = train_epochs
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -51,7 +55,10 @@ class BaseExperiment(metaclass=LogEnabledABC):
         self.cl_dataset = None
         self.model = None
 
-        self.tensorboard_logger = TensorboardLogger(f"tb_data/{datetime.now()}")
+        method_name = self.__class__.__name__
+        self.tensorboard_logger = TensorboardLogger(
+            f"tb_data/{datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M")}__{method_name}"
+        )
 
         self.__print_model_name()
         self.__setup__()
@@ -138,3 +145,16 @@ class BaseExperiment(metaclass=LogEnabledABC):
             self.cl_strategy.eval(self.cl_dataset.test_stream[:i])
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
+
+    @property
+    def default_settings(self):
+        return {
+            "model": self.model,
+            "optimizer": self.optimizer,
+            "criterion": self.criterion,
+            "train_epochs": self.train_epochs,
+            "train_mb_size": self.batch_size,
+            "eval_mb_size": self.batch_size,
+            "device": self.device,
+            "evaluator": self.eval_plugin,
+        }

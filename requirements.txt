@@ -1,3 +1,5 @@
 avalanche-lib~=0.6.0
 torch~=2.5.1
 matplotlib~=3.9.3
+packaging~=24.2
+torchvision~=0.20.1

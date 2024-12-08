@@ -9,6 +9,7 @@ def save_example_data(
 ):
     fig, axs = plt.subplots(1, 3, figsize=(10, 3))
 
+    # TODO: support both grayscale and RGB images
     for i, (x, y, t) in enumerate(dataset):
         if i >= 3:
             break
