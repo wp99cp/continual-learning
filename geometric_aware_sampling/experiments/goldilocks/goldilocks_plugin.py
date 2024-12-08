@@ -49,9 +49,9 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
     :param task_balanced_dataloader: if True, buffer data loaders will be
         task-balanced, otherwise it will create a single dataloader for the
         buffer samples.
-    :param p: the lower quantile of the learning speed distribution that will
+    :param p: the upper quantile of the learning speed distribution that will
         never be included in the buffer
-    :param s: the upper quantile of the learning speed distribution that will
+    :param s: the lower quantile of the learning speed distribution that will
         never be included in the buffer
 
     Based on the implementation of the ReplayPlugin from the Avalanche library.
@@ -66,8 +66,8 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         batch_size: Optional[int] = None,
         batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
-        p: float = 0.25,
-        s: float = 0.75,
+        p: float = 0.75,
+        s: float = 0.25,
     ):
         super().__init__()
         self.mem_size = mem_size

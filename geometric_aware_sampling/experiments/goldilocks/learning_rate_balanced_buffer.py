@@ -48,10 +48,10 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         :param num_experiences: If adaptive size is False, the fixed number
                                 of experiences to divide capacity over.
 
-        :param p: the lower quantile of the learning speed distribution that will
+        :param p: the upper quantile of the learning speed distribution that will
                   never be included in the buffer
 
-        :param s: the upper quantile of the learning speed distribution that will
+        :param s: the lower quantile of the learning speed distribution that will
                 never be included in the buffer
         """
         super().__init__(max_size, adaptive_size, num_experiences)
@@ -72,11 +72,13 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
 
         weights = torch.rand(len(new_data))
 
-        # filter the samples based on the learning speed
-        # TODO: we should filter according to relative ordering instead of absolute values
-        #   as p, q are percentages not learning speed values
-        mask = (learning_speed >= self.p) & (learning_speed <= self.q)
-        weights[mask] = 0
+        # create a mask, which masks the top q% and bottom s% of the learning speed
+        mask = (learning_speed > learning_speed.quantile(self.q)) & (
+            learning_speed < learning_speed.quantile(self.p)
+        )
+        weights[mask] = (
+            0  # set the weights of the samples in the mask to 0, so they are not included in the buffer
+        )
 
         new_buffer.update_from_dataset(new_data, weights=weights)
         self.buffer_groups[self._num_exps - 1] = new_buffer
