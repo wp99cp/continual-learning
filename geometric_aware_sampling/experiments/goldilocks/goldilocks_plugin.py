@@ -6,23 +6,15 @@ from avalanche.core import Template
 from avalanche.training.plugins import (
     SupervisedPlugin,
 )
-from avalanche.training.storage_policy import (
-    ExemplarsBuffer,
-    ExperienceBalancedBuffer,
-)
 from avalanche.training.templates import SupervisedTemplate
 from packaging.version import parse
 
+from geometric_aware_sampling.experiments.goldilocks.learning_rate_balanced_buffer import (
+    LearningRateBalancedBuffer,
+)
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
-
-
-#
-# Documentation about avalanche library
-# --> see https://avalanche.continualai.org/from-zero-to-hero-tutorial/04_training#training-and-evaluation-loops
-# and https://avalanche-api.continualai.org/en/v0.6.0/generated/avalanche.core.SupervisedPlugin.html
-#
 
 
 class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
@@ -55,10 +47,12 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         (the default value), it will be automatically set equal to the
         data batch size.
     :param task_balanced_dataloader: if True, buffer data loaders will be
-            task-balanced, otherwise it will create a single dataloader for the
-            buffer samples.
-    :param storage_policy: The policy that controls how to add new exemplars
-                           in memory
+        task-balanced, otherwise it will create a single dataloader for the
+        buffer samples.
+    :param p: the lower quantile of the learning speed distribution that will
+        never be included in the buffer
+    :param q: the upper quantile of the learning speed distribution that will
+        never be included in the buffer
 
     Based on the implementation of the ReplayPlugin from the Avalanche library.
     Release under the MIT License. Source:
@@ -72,7 +66,8 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         batch_size: Optional[int] = None,
         batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
-        storage_policy: Optional["ExemplarsBuffer"] = None,
+        p: float = 0.25,
+        q: float = 0.75,
     ):
         super().__init__()
         self.mem_size = mem_size
@@ -82,13 +77,11 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
 
         self.has_added_learning_speed_plugin = False
 
-        if storage_policy is not None:  # Use other storage policy
-            self.storage_policy = storage_policy
-            assert storage_policy.max_size == self.mem_size
-        else:  # Default
-            self.storage_policy = ExperienceBalancedBuffer(
-                max_size=self.mem_size, adaptive_size=True
-            )
+        # The storage policy samples the data based on the learning speed
+        # and stores the samples in the external memory.
+        self.storage_policy = LearningRateBalancedBuffer(
+            max_size=self.mem_size, adaptive_size=True, p=p, q=q
+        )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:
         """Adds the learning speed plugin to the strategy."""
@@ -162,5 +155,4 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         uses after_training_exp to update the buffer after each training experience
         """
 
-        # TODO: add samples based on the learning speed
-        self.storage_policy.update(strategy, **kwargs)
+        self.storage_policy.post_adapt(strategy, strategy.experience)
