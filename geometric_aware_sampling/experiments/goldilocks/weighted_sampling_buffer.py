@@ -7,7 +7,17 @@ from torch import Tensor
 
 
 class WeightedSamplingBuffer(ExemplarsBuffer):
-    """Buffer updated with reservoir sampling."""
+    """
+
+    Buffer updated with reservoir sampling.
+
+    TODO: check the behavior of the buffer when the buffer is full and new data
+        is added. e.g. after the third epoch, the buffer is full and new data
+        is added. What happens to the buffer? How is data discarded?
+
+        Check if this is correctly implemented according to the paper...
+
+    """
 
     def __init__(self, max_size: int):
         """
