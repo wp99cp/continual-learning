@@ -1,6 +1,6 @@
 import argparse
+import datetime
 from abc import abstractmethod
-from datetime import datetime
 
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
@@ -55,7 +55,10 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.cl_dataset = None
         self.model = None
 
-        self.tensorboard_logger = TensorboardLogger(f"tb_data/{datetime.now()}")
+        method_name = self.__class__.__name__
+        self.tensorboard_logger = TensorboardLogger(
+            f"tb_data/{datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M")}__{method_name}"
+        )
 
         self.__print_model_name()
         self.__setup__()
