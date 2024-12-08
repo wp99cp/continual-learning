@@ -66,8 +66,8 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         batch_size: Optional[int] = None,
         batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
-        p: float = 0.75,
-        s: float = 0.25,
+        p: float = 1 - 0.28,  # chosen according to the paper, figure 4 (a)
+        s: float = 0.52,  # chosen according to the paper, figure 4 (a)
     ):
         super().__init__()
         self.mem_size = mem_size

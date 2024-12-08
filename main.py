@@ -33,7 +33,7 @@ def main():
         "dataset_name": "split_cifar100",  # "split_cifar100" or "split_mnist"
         "model_name": "slim_resnet18",  # "slim_resnet18"
         "batch_size": 16,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 5,
+        "train_epochs": 10,
     }
 
     experiments = [
