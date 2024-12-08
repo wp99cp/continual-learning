@@ -27,14 +27,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
 
     def create_cl_strategy(self):
         return SupervisedTemplate(
-            model=self.model,
-            optimizer=self.optimizer,
-            criterion=self.criterion,
-            train_epochs=5,
-            train_mb_size=16,
-            eval_mb_size=16,
-            device=self.device,
-            evaluator=self.eval_plugin,
+            **self.default_settings,
             plugins=[
                 GoldilocksPlugin(storage_policy=GeometricAwareSampling(200)),
             ],

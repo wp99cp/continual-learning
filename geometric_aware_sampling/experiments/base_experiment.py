@@ -26,6 +26,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         args: argparse.Namespace,
         dataset_name: str = "split_mnist",
         model_name: str = "slim_resnet18",
+        batch_size: int = 16,
+        train_epochs: int = 5,
     ):
         """
         Initialize the experiment
@@ -38,6 +40,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.args = args
         self.dataset_name = dataset_name
         self.model_name = model_name
+        self.batch_size = batch_size
+        self.train_epochs = train_epochs
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -138,3 +142,16 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             self.cl_strategy.eval(self.cl_dataset.test_stream[:i])
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
+
+    @property
+    def default_settings(self):
+        return {
+            "model": self.model,
+            "optimizer": self.optimizer,
+            "criterion": self.criterion,
+            "train_epochs": self.train_epochs,
+            "train_mb_size": self.batch_size,
+            "eval_mb_size": self.batch_size,
+            "device": self.device,
+            "evaluator": self.eval_plugin,
+        }
