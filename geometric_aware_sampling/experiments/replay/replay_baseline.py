@@ -18,7 +18,7 @@ class ReplayBaseline(BaseExperimentStrategy):
             optimizer=self.optimizer,
             criterion=self.criterion,
             # number of training epochs per experience
-            train_epochs=1,
+            train_epochs=5,
             # batch sizes
             train_mb_size=16,
             eval_mb_size=16,

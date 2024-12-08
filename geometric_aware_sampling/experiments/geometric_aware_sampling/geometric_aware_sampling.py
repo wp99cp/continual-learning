@@ -30,7 +30,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
             model=self.model,
             optimizer=self.optimizer,
             criterion=self.criterion,
-            train_epochs=1,
+            train_epochs=5,
             train_mb_size=16,
             eval_mb_size=16,
             device=self.device,

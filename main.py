@@ -21,7 +21,7 @@ def main():
 
     settings = {
         "args": args,
-        "dataset_name": "split_cifar100",  # "split_cifar100" or "split_mnist"
+        "dataset_name": "split_mnist",  # "split_cifar100" or "split_mnist"
         "model_name": "slim_resnet18",  # "slim_resnet18"
     }
 
