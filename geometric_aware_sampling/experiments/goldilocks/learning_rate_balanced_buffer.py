@@ -70,6 +70,11 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         if learning_speed is None:
             raise ValueError("LearningSpeedPlugin not found in the strategy")
 
+        # we initialize the weights of the samples to a random value
+        # to ensure uniform sampling, we later set the weights of the samples
+        # in the mask to 0 to exclude them from the buffer
+        #
+        # based on https://en.wikipedia.org/wiki/Reservoir_sampling
         weights = torch.rand(len(new_data))
 
         # create a mask, which masks the top q% and bottom s% of the learning speed

@@ -13,13 +13,9 @@ class WeightedSamplingBuffer(ExemplarsBuffer):
         """
         :param max_size:
         """
-        # The algorithm follows
-        # https://en.wikipedia.org/wiki/Reservoir_sampling
-        # We sample a random uniform value in [0, 1] for each sample and
-        # choose the `size` samples with higher values.
-        # This is equivalent to a random selection of `size_samples`
-        # from the entire stream.
+
         super().__init__(max_size)
+
         # INVARIANT: _buffer_weights is always sorted.
         self._buffer_weights = torch.zeros(0)
 
@@ -52,7 +48,9 @@ class WeightedSamplingBuffer(ExemplarsBuffer):
     def resize(self, strategy: Any, new_size: int):
         """Update the maximum size of the buffer."""
         self.max_size = new_size
+
         if len(self.buffer) <= self.max_size:
             return
+
         self.buffer = self.buffer.subset(torch.arange(self.max_size))
         self._buffer_weights = self._buffer_weights[: self.max_size]
