@@ -1,7 +1,8 @@
 import argparse
 
-from geometric_aware_sampling.experiments.naive_baseline import NaiveBaseline
-from geometric_aware_sampling.experiments.replay_baseline import ReplayBaseline
+from geometric_aware_sampling.experiments.goldilocks.goldilocks_experiment import (
+    GoldilocksBaselineStrategy,
+)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -24,7 +25,12 @@ def main():
         "model_name": "slim_resnet18",  # "slim_resnet18"
     }
 
-    experiments = [NaiveBaseline, ReplayBaseline]
+    experiments = [
+        GoldilocksBaselineStrategy,
+        # ReplayBaselineStrategy,
+        # NaiveBaselineStrategy
+        # GeometricAwareSamplingStrategy
+    ]
     for i, experiment in enumerate(experiments):
         experiment = experiment(**settings)
         experiment.run()

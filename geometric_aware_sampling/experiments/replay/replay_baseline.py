@@ -1,9 +1,9 @@
-from avalanche.training import Naive
+from avalanche.training import Naive, Replay
 
-from geometric_aware_sampling.experiments.base_experiment import BaseExperiment
+from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
 
 
-class NaiveBaseline(BaseExperiment):
+class ReplayBaseline(BaseExperimentStrategy):
     """
 
     Baseline experiment using the Naive continual learning strategy
@@ -12,7 +12,7 @@ class NaiveBaseline(BaseExperiment):
     """
 
     def create_cl_strategy(self):
-        return Naive(
+        return Replay(
             # model and optimizer (normal PyTorch modules)
             model=self.model,
             optimizer=self.optimizer,

@@ -14,7 +14,7 @@ from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
 
-class BaseExperiment(metaclass=LogEnabledABC):
+class BaseExperimentStrategy(metaclass=LogEnabledABC):
     """
 
     Abstract Base class for all experiments
