@@ -51,7 +51,7 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         buffer samples.
     :param p: the lower quantile of the learning speed distribution that will
         never be included in the buffer
-    :param q: the upper quantile of the learning speed distribution that will
+    :param s: the upper quantile of the learning speed distribution that will
         never be included in the buffer
 
     Based on the implementation of the ReplayPlugin from the Avalanche library.
@@ -67,7 +67,7 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
         p: float = 0.25,
-        q: float = 0.75,
+        s: float = 0.75,
     ):
         super().__init__()
         self.mem_size = mem_size
@@ -80,7 +80,7 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         # The storage policy samples the data based on the learning speed
         # and stores the samples in the external memory.
         self.storage_policy = LearningRateBalancedBuffer(
-            max_size=self.mem_size, adaptive_size=True, p=p, q=q
+            max_size=self.mem_size, adaptive_size=True, p=p, s=s
         )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:

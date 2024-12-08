@@ -38,7 +38,7 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         adaptive_size: bool = True,
         num_experiences=None,
         p: float = 0.25,
-        q: float = 0.75,
+        s: float = 0.75,
     ):
         """
         :param max_size: max number of total input samples in the replay
@@ -51,13 +51,13 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         :param p: the lower quantile of the learning speed distribution that will
                   never be included in the buffer
 
-        :param q: the upper quantile of the learning speed distribution that will
+        :param s: the upper quantile of the learning speed distribution that will
                 never be included in the buffer
         """
         super().__init__(max_size, adaptive_size, num_experiences)
         self._num_exps = 0
         self.p = p
-        self.q = q
+        self.q = s
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
         self._num_exps += 1
@@ -73,6 +73,8 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         weights = torch.rand(len(new_data))
 
         # filter the samples based on the learning speed
+        # TODO: we should filter according to relative ordering instead of absolute values
+        #   as p, q are percentages not learning speed values
         mask = (learning_speed >= self.p) & (learning_speed <= self.q)
         weights[mask] = 0
 
