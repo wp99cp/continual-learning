@@ -56,7 +56,7 @@ class LearningSpeedPlugin(SupervisedPlugin, supports_distributed=False):
         # if so add one to the learning speed of the samples
 
         # get the index of the samples
-        idxs = strategy.mbatch[-2]
+        idxs = strategy.mbatch[-1]
 
         # correct classification
         output = strategy.mb_output  # of size (32, 10)
