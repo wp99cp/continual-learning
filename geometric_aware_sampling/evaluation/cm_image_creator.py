@@ -96,7 +96,10 @@ def cm_image_creator(
                 "yticklabels": display_labels,
             }
             if display_labels is not None
-            else {}
+            else {
+                "xticks": [],
+                "yticks": [],
+            }
         ),
     )
 
