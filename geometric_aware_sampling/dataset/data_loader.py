@@ -14,6 +14,8 @@ def save_example_data(
             break
 
         ax = axs[i]
+        x = (x + 2) / 4.0  # map to ~ [0, 1]
+        x = x.clamp(0, 1)  # clamp to [0, 1]
         ax.imshow(x.permute(1, 2, 0), cmap="gray")
         ax.set_title(f"y={y}, t={t}")
         ax.axis("off")
