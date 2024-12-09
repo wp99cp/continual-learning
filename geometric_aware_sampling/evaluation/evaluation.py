@@ -10,6 +10,8 @@ from avalanche.evaluation.metrics import (
 from avalanche.logging import BaseLogger
 from avalanche.training.plugins import EvaluationPlugin
 
+from geometric_aware_sampling.evaluation.cm_image_creator import cm_image_creator
+
 
 def get_evaluator(n_classes, loggers: BaseLogger | Sequence[BaseLogger] = None):
     return EvaluationPlugin(
@@ -18,8 +20,9 @@ def get_evaluator(n_classes, loggers: BaseLogger | Sequence[BaseLogger] = None):
         confusion_matrix_metrics(
             num_classes=n_classes,
             save_image=True,
-            normalize="all",
+            normalize="pred",
             stream=True,
+            image_creator=cm_image_creator,
             absolute_class_order=False,  # sort by class introduction
         ),
         forgetting_metrics(experience=True, stream=True),
