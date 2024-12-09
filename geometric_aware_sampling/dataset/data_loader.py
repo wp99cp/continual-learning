@@ -1,4 +1,4 @@
-from avalanche.benchmarks import SplitCIFAR100, SplitMNIST
+from avalanche.benchmarks import SplitCIFAR100, SplitMNIST, SplitFMNIST
 from avalanche.logging import TensorboardLogger
 from matplotlib import pyplot as plt
 
@@ -51,6 +51,8 @@ def load_dataset(
         bm = SplitMNIST(**shared_base_args)
     elif dataset_name == "split_cifar100":
         bm = SplitCIFAR100(**shared_base_args)
+    elif dataset_name == "split_fmnist":
+        bm = SplitFMNIST(**shared_base_args)
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
 
