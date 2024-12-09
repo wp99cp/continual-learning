@@ -112,9 +112,12 @@ def load_dataset(
         if i > 2:
             break
 
-    if tensorboard_logger is not None:
-        save_example_data(bm.train_stream[0].dataset, tensorboard_logger)
-    else:
-        print("No tensorboard logger provided, skipping example data visualization")
+    ###################################
+    # disabled: we use the example images_samples_metrics from avalanche
+    #
+    # if tensorboard_logger is not None:
+    #     save_example_data(bm.train_stream[0].dataset, tensorboard_logger)
+    # else:
+    #    print("No tensorboard logger provided, skipping example data visualization")
 
     return bm
