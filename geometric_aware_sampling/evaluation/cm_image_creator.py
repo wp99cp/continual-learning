@@ -86,12 +86,15 @@ def cm_image_creator(
         display_labels = None
 
     ax.set(
-        xticks=np.arange(n_classes),
-        yticks=np.arange(n_classes),
         ylabel="True label",
         xlabel="Predicted label",
         **(
-            {"xticklabels": display_labels, "yticklabels": display_labels}
+            {
+                "xticks": np.arange(n_classes),
+                "yticks": np.arange(n_classes),
+                "xticklabels": display_labels,
+                "yticklabels": display_labels,
+            }
             if display_labels is not None
             else {}
         ),
