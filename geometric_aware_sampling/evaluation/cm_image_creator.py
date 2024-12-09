@@ -81,7 +81,8 @@ def cm_image_creator(
     # we only want to show the numbers if there are less than 10 classes
     if display_labels is None and n_classes <= 10:
         display_labels = np.arange(n_classes)
-    elif n_classes > 10:  # hide labels if there are more than 10 classes
+
+    if n_classes > 10:  # hide labels if there are more than 10 classes
         display_labels = None
 
     ax.set(
