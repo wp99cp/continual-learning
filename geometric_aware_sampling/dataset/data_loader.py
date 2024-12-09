@@ -1,6 +1,12 @@
-from avalanche.benchmarks import SplitCIFAR100, SplitMNIST, SplitFMNIST
+from avalanche.benchmarks import (
+    SplitCIFAR100,
+    SplitMNIST,
+    SplitFMNIST,
+    SplitTinyImageNet,
+)
 from avalanche.logging import TensorboardLogger
 from matplotlib import pyplot as plt
+from torchvision import transforms
 
 
 def save_example_data(
@@ -55,6 +61,32 @@ def load_dataset(
         bm = SplitCIFAR100(**shared_base_args)
     elif dataset_name == "split_fmnist":
         bm = SplitFMNIST(**shared_base_args)
+    elif dataset_name == "split_tiny_imagenet":
+        bm = SplitTinyImageNet(
+            **shared_base_args,
+            train_transform=transforms.Compose(
+                [
+                    transforms.Resize((32, 32)),  # to be consistent with CIFAR10/100
+                    # default transformations for TinyImageNet
+                    transforms.RandomHorizontalFlip(),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+                    ),
+                ]
+            ),
+            eval_transform=transforms.Compose(
+                [
+                    transforms.Resize((32, 32)),  # to be consistent with CIFAR10/100
+                    # default transformations for TinyImageNet
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+                    ),
+                ]
+            ),
+        )
+
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
 
