@@ -6,12 +6,10 @@ from avalanche.evaluation.metrics import (
     forgetting_metrics,
     loss_metrics,
     timing_metrics,
-    cpu_usage_metrics,
     class_accuracy_metrics,
     images_samples_metrics,
     ImagesSamplePlugin,
-    ram_usage_metrics,
-    gpu_usage_metrics,
+    bwt_metrics,
 )
 from avalanche.logging import BaseLogger
 from avalanche.training.plugins import EvaluationPlugin
@@ -56,6 +54,7 @@ def get_evaluator(n_classes, loggers: BaseLogger | Sequence[BaseLogger] = None):
         # Continual Learning metrics
         ##########################
         forgetting_metrics(experience=True, stream=True),
+        bwt_metrics(experience=True, stream=True),
         confusion_matrix_metrics(
             num_classes=n_classes,
             save_image=True,
@@ -71,11 +70,11 @@ def get_evaluator(n_classes, loggers: BaseLogger | Sequence[BaseLogger] = None):
         ##########################
         # system metrics
         ##########################
-        # the following metric makes the training process very slow
+        # the following metrics make the training process very slow
         # disk_usage_metrics(epoch=True, experience=True, stream=True),
-        cpu_usage_metrics(epoch=True, experience=True, stream=True),
-        gpu_usage_metrics(epoch=True, experience=True, stream=True, gpu_id=0),
-        ram_usage_metrics(epoch=True, experience=True, stream=True),
+        # cpu_usage_metrics(epoch=True, experience=True, stream=True),
+        # gpu_usage_metrics(epoch=True, experience=True, stream=True, gpu_id=0),
+        # ram_usage_metrics(epoch=True, experience=True, stream=True),
         timing_metrics(epoch=True, experience=True, stream=True),
         ##########################
         # logger
