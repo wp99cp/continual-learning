@@ -48,6 +48,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         model_name: str = "slim_resnet18",
         batch_size: int = 16,
         train_epochs: int = 5,
+        run_evaluation_after_epoch: bool = True,
     ):
         """
         Initialize the experiment
@@ -62,6 +63,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.model_name = model_name
         self.batch_size = batch_size
         self.train_epochs = train_epochs
+        self.run_evaluation_after_epoch = run_evaluation_after_epoch
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -74,10 +76,6 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.cl_strategy = None
         self.cl_dataset = None
         self.model = None
-
-        # setting if we should run an evaluation pass
-        # after every epoch or after every experience/task
-        self.run_evaluation_after_epoch = True
 
         method_name = self.__class__.__name__
         self.tensorboard_logger = TensorboardLogger(
