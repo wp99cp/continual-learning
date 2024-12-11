@@ -12,4 +12,4 @@ class ReplayBaselineStrategy(BaseExperimentStrategy):
     """
 
     def create_cl_strategy(self):
-        return Replay(**self.default_settings)
+        return Replay(**self.default_settings, mem_size=1000)
