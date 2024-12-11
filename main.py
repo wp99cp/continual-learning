@@ -16,15 +16,7 @@ from geometric_aware_sampling.experiments.retrain_from_scratch.retrain_baseline 
     RetrainBaselineStrategy,
 )
 
-def parse_arguments() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--cuda",
-        type=int,
-        default=0,
-        help="Select zero-indexed cuda device. -1 to use CPU.",
-    )
-    return parser.parse_args()
+from geometric_aware_sampling.utils.argument_parser import parse_arguments
 
 
 def main():
