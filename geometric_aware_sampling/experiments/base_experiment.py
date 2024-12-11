@@ -9,9 +9,29 @@ from torch.optim import Adam
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
+from geometric_aware_sampling.evaluation.model_tester_plugin import ModelTesterPlugin
 from geometric_aware_sampling.models.model_loader import load_model
 from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
+
+
+def model_evaluation_callback(strategy, dataset, current_experience=None):
+    """
+    Callback to evaluate the model on the dataset after each experience
+
+    We evaluate the model the classes of all experiences seen so far
+    e.g., after the first experience, we evaluate on the first experience
+    after the second experience, we evaluate on the first and second experience
+
+    """
+
+    if current_experience is None:
+        assert (
+            strategy.experience.current_experience is not None
+        ), "No current experience"
+        current_experience = strategy.experience.current_experience + 1
+
+    strategy.eval(dataset.test_stream[:current_experience])
 
 
 class BaseExperimentStrategy(metaclass=LogEnabledABC):
@@ -55,6 +75,10 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.cl_dataset = None
         self.model = None
 
+        # setting if we should run an evaluation pass
+        # after every epoch or after every experience/task
+        self.run_evaluation_after_epoch = True
+
         method_name = self.__class__.__name__
         self.tensorboard_logger = TensorboardLogger(
             f"tb_data/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}__{method_name}"
@@ -95,6 +119,14 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             self.cl_dataset.n_classes, [self.tensorboard_logger, InteractiveLogger()]
         )
         self.cl_strategy = self.create_cl_strategy()
+
+        # add plugin to run evaluation after every epoch
+        if self.run_evaluation_after_epoch:
+            model_tester_plugin = ModelTesterPlugin(
+                callback=model_evaluation_callback,
+                dataset=self.cl_dataset,
+            )
+            self.cl_strategy.plugins.append(model_tester_plugin)
 
     def __print_model_name(self):
         print(
@@ -139,10 +171,10 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
 
             self.cl_strategy.train(experience)
 
-            # we evaluate the model the classes of all experiences seen so far
-            # e.g., after the first experience, we evaluate on the first experience
-            # after the second experience, we evaluate on the first and second experience
-            self.cl_strategy.eval(self.cl_dataset.test_stream[:i])
+            if (
+                not self.run_evaluation_after_epoch
+            ):  # otherwise this is done by the plugin
+                model_evaluation_callback(self.cl_strategy, self.cl_dataset, i)
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
 
