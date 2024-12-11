@@ -24,8 +24,7 @@ from geometric_aware_sampling.utils.file_handler import (
     load_results_from_pkl,
     save_results_to_pkl,
 )
-
-TENSORBOARD_DIR = "tb_data"
+from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
 
 
 def main():

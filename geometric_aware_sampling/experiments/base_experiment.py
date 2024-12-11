@@ -12,6 +12,7 @@ from geometric_aware_sampling.evaluation.evaluation import get_evaluator
 from geometric_aware_sampling.evaluation.model_tester_plugin import ModelTesterPlugin
 from geometric_aware_sampling.models.model_loader import load_model
 from geometric_aware_sampling.utils.hardware_info import print_hardware_info
+from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
 from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
 
@@ -79,7 +80,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
 
         method_name = self.__class__.__name__
         self.tensorboard_logger = TensorboardLogger(
-            f"tb_data/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}__{method_name}"
+            f"{TENSORBOARD_DIR}/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}__{method_name}"
         )
 
         self.__print_model_name()
