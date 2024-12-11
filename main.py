@@ -12,7 +12,9 @@ from geometric_aware_sampling.experiments.naive.naive_baseline import (
 from geometric_aware_sampling.experiments.replay.replay_baseline import (
     ReplayBaselineStrategy,
 )
-
+from geometric_aware_sampling.experiments.retrain_from_scratch.retrain_baseline import (
+    RetrainBaselineStrategy,
+)
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -28,6 +30,10 @@ def parse_arguments() -> argparse.Namespace:
 def main():
     args = parse_arguments()
 
+    ###################################
+    # Experiment Settings and (global) Hyperparameters
+    ###################################
+
     settings = {
         "args": args,
         "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
@@ -40,6 +46,7 @@ def main():
         GoldilocksBaselineStrategy,
         ReplayBaselineStrategy,
         NaiveBaselineStrategy,
+        RetrainBaselineStrategy,
         GeometricAwareSamplingStrategy,
     ]
     for i, experiment in enumerate(experiments):
