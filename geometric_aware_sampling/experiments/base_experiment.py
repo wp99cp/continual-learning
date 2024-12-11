@@ -57,7 +57,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
 
         method_name = self.__class__.__name__
         self.tensorboard_logger = TensorboardLogger(
-            f"tb_data/{datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M")}__{method_name}"
+            f"tb_data/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}__{method_name}"
         )
 
         self.__print_model_name()
