@@ -29,6 +29,21 @@ tensorboard --logdir tb_data --port 6066
 
 Open tensorboard in your browser at `localhost:6066`
 
+### Regenerate Result Figures
+
+All metrics returned are saved inside a pkl file. You can regenerate the figures using
+the following command:
+
+```bash
+python main.py --res_path tb_data/<date-of-run>_results
+```
+
+The results are then saved inside a tensorboard directory. You can visualize them using tensorboard.
+
+```bash
+tensorboard --logdir tb_data/<date-of-run>_results --port 6066
+```
+
 ## Development / Debugging
 
 We use black for code formatting the code. You can install it using pip and run it on the code.

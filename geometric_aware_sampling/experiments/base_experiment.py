@@ -190,3 +190,17 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             "device": self.device,
             "evaluator": self.eval_plugin,
         }
+
+    def get_results(self):
+        """
+        Used to return a dict of the experiment results
+        :return: dict
+        """
+
+        # extract the results form the evaluation plugin
+        plugins = self.cl_strategy.plugins
+        eval_plugin = [
+            p for p in plugins if p.__class__.__name__ == "EvaluationPlugin"
+        ][0]
+
+        return eval_plugin.all_metric_results
