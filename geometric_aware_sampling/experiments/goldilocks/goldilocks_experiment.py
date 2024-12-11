@@ -11,9 +11,5 @@ class GoldilocksBaselineStrategy(BaseExperimentStrategy):
     def create_cl_strategy(self):
         return SupervisedTemplate(
             **self.default_settings,
-            plugins=[
-                GoldilocksPlugin(
-                    mem_size=1000  # ~ 10% of the cifar100 dataset per task
-                )
-            ],
+            plugins=[GoldilocksPlugin(mem_size=500)],
         )
