@@ -28,7 +28,7 @@ def _load_data(
     labels: List[Tensor] = []
     tasks: List[Tensor] = []
 
-    for batch_images, batch_labels, batch_tasks, _ in dataloader:
+    for batch_images, batch_labels, batch_tasks, *_ in dataloader:
         n_missing_images = self.n_wanted_images - len(images)
         labels.extend(batch_labels[:n_missing_images].tolist())
         tasks.extend(batch_tasks[:n_missing_images].tolist())
