@@ -15,25 +15,6 @@ from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
 from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
 
-def model_evaluation_callback(strategy, dataset, current_experience=None):
-    """
-    Callback to evaluate the model on the dataset after each experience
-
-    We evaluate the model the classes of all experiences seen so far
-    e.g., after the first experience, we evaluate on the first experience
-    after the second experience, we evaluate on the first and second experience
-
-    """
-
-    if current_experience is None:
-        assert (
-            strategy.experience.current_experience is not None
-        ), "No current experience"
-        current_experience = strategy.experience.current_experience + 1
-
-    strategy.eval(dataset.test_stream[:current_experience])
-
-
 class BaseExperimentStrategy(metaclass=LogEnabledABC):
     """
 
@@ -116,7 +97,6 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         )
         self.cl_strategy = self.create_cl_strategy()
 
-
     def __print_model_name(self):
         print(
             f"""
@@ -159,12 +139,9 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             )
 
             self.cl_strategy.train(
-                experience,
-                eval_streams=[self.cl_dataset.test_stream[:i]],
+                experience, eval_streams=[self.cl_dataset.test_stream[:i]],
                 tensorboard_logger=self.tensorboard_logger,
             )
-
-
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
 
