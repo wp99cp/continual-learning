@@ -9,7 +9,6 @@ from torch.optim import Adam
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
-from geometric_aware_sampling.evaluation.model_tester_plugin import ModelTesterPlugin
 from geometric_aware_sampling.models.model_loader import load_model
 from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
@@ -49,7 +48,6 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         model_name: str = "slim_resnet18",
         batch_size: int = 16,
         train_epochs: int = 5,
-        run_evaluation_after_epoch: bool = True,
     ):
         """
         Initialize the experiment
@@ -64,7 +62,6 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.model_name = model_name
         self.batch_size = batch_size
         self.train_epochs = train_epochs
-        self.run_evaluation_after_epoch = run_evaluation_after_epoch
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -119,13 +116,6 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         )
         self.cl_strategy = self.create_cl_strategy()
 
-        # add plugin to run evaluation after every epoch
-        if self.run_evaluation_after_epoch:
-            model_tester_plugin = ModelTesterPlugin(
-                callback=model_evaluation_callback,
-                dataset=self.cl_dataset,
-            )
-            self.cl_strategy.plugins.append(model_tester_plugin)
 
     def __print_model_name(self):
         print(
@@ -170,14 +160,11 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
 
             self.cl_strategy.train(
                 experience,
-                eval_streams=None,
+                eval_streams=[self.cl_dataset.test_stream[:i]],
                 tensorboard_logger=self.tensorboard_logger,
             )
 
-            if (
-                not self.run_evaluation_after_epoch
-            ):  # otherwise this is done by the plugin
-                model_evaluation_callback(self.cl_strategy, self.cl_dataset, i)
+
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
 
@@ -192,6 +179,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             "eval_mb_size": self.batch_size,
             "device": self.device,
             "evaluator": self.eval_plugin,
+            "eval_every": 1,  # eval after every epoch
         }
 
     def get_results(self):

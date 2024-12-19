@@ -40,9 +40,6 @@ def main():
         "model_name": "slim_resnet18",  # "slim_resnet18"
         "batch_size": 16,  # for replay based strategies, the actual batch size is batch_size * 2
         "train_epochs": 12,
-        # setting if we should run an evaluation pass (test set) after each epoch
-        # we only used the part of the test set including samples from already seen classes
-        "run_evaluation_after_epoch": True,
     }
 
     # define the number of repetitions for each experiment
