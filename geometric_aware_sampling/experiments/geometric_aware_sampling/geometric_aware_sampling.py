@@ -4,6 +4,9 @@ from geometric_aware_sampling.experiments.base_experiment import BaseExperimentS
 from geometric_aware_sampling.experiments.goldilocks.goldilocks_plugin import (
     GoldilocksPlugin,
 )
+from geometric_aware_sampling.experiments.geometric_aware_sampling.representation_plugin import (
+    RepresentationPlugin
+)
 
 
 class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
@@ -20,6 +23,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
             plugins=[
                 GoldilocksPlugin(
                     mem_size=1000  # ~ 10% of the cifar100 dataset per task
-                )
+                ),
+                RepresentationPlugin()
             ],
         )

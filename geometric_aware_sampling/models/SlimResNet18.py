@@ -76,6 +76,10 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        out = self.linear(self.extract_last_layer(x))
+        return out
+
+    def extract_last_layer(self, x):
         bsz = x.size(0)
 
         out = relu(self.bn1(self.conv1(x.view(bsz, *self.input_dim))))
@@ -85,7 +89,6 @@ class ResNet(nn.Module):
         out = self.layer4(out)
         out = avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
-        out = self.linear(out)
         return out
 
 

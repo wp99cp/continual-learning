@@ -168,7 +168,11 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
                 f"\n - Experience {i} / {self.cl_dataset.n_experiences} with classes {experience.classes_in_this_experience}"
             )
 
-            self.cl_strategy.train(experience)
+            self.cl_strategy.train(
+                experience,
+                eval_streams=None,
+                tensorboard_logger=self.tensorboard_logger,
+            )
 
             if (
                 not self.run_evaluation_after_epoch
