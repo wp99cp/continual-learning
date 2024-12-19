@@ -139,7 +139,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             )
 
             self.cl_strategy.train(
-                experience, eval_streams=[self.cl_dataset.test_stream[:i]],
+                experience,
+                eval_streams=[self.cl_dataset.test_stream[:i]],
                 tensorboard_logger=self.tensorboard_logger,
             )
 
