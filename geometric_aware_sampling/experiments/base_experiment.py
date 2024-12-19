@@ -97,6 +97,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         )
         self.cl_strategy = self.create_cl_strategy()
 
+
     def __print_model_name(self):
         print(
             f"""
