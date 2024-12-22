@@ -66,8 +66,8 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         batch_size: Optional[int] = None,
         batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
-        p: float = 1 - 0.28,  # chosen according to the paper, figure 4 (a)
-        s: float = 0.52,  # chosen according to the paper, figure 4 (a)
+        upper_quantile: float = 1 - 0.28,  # chosen according to the paper, figure 4 (a)
+        lower_quantile: float = 0.52,  # chosen according to the paper, figure 4 (a)
     ):
         super().__init__()
         self.mem_size = mem_size
@@ -80,7 +80,7 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         # The storage policy samples the data based on the learning speed
         # and stores the samples in the external memory.
         self.storage_policy = LearningRateBalancedBuffer(
-            max_size=self.mem_size, adaptive_size=True, p=p, s=s
+            max_size=self.mem_size, adaptive_size=True, upper_q_ls=upper_quantile, lower_q_ls=lower_quantile
         )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:

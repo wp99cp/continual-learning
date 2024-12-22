@@ -1,6 +1,8 @@
 import torch
+import random
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
+from avalanche.benchmarks.utils.utils import concat_datasets
 
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
@@ -37,8 +39,10 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         max_size: int,
         adaptive_size: bool = True,
         num_experiences=None,
-        p: float = 0.25,
-        s: float = 0.75,
+        upper_q_ls: float = 0.25,
+        lower_q_ls: float = 0.75,
+        q: float = 0.4,
+        p: float = 1.0,
     ):
         """
         :param max_size: max number of total input samples in the replay
@@ -48,20 +52,43 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         :param num_experiences: If adaptive size is False, the fixed number
                                 of experiences to divide capacity over.
 
-        :param p: the upper quantile of the learning speed distribution that will
+        :param upper_q_ls: the upper quantile of the learning speed distribution that will
                   never be included in the buffer
 
-        :param s: the lower quantile of the learning speed distribution that will
+        :param lower_q_ls: the lower quantile of the learning speed distribution that will
                 never be included in the buffer
+
+        :param q: ratio of training samples to keep
+        :param p: ratio of buffer samples to use
         """
         super().__init__(max_size, adaptive_size, num_experiences)
         self._num_exps = 0
+        self.upper_quantile_ls = upper_q_ls
+        self.lower_quantile_ls = lower_q_ls
+        self.q = q
         self.p = p
-        self.q = s
+
+    @property
+    def buffer(self):
+        datasets = []
+        if self._num_exps > 0:
+            lens = self.get_group_lengths(self._num_exps)
+
+            # Sample p% of the datapoints per group
+            for ll, b in zip(lens, self.buffer_groups.values()):
+                # Deal with rounding errors
+                buf = b.buffer
+                l = min(int(self.p * ll), len(buf))
+                indices = random.sample(range(len(buf)), k=l)
+                datasets.append(buf.subset(indices))
+        return concat_datasets(datasets)
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
         self._num_exps += 1
         new_data = exp.dataset
+        
+        # Increase size proportional to total amount of data
+        self.max_size = self.max_size + int(self.q * len(new_data))
         lens = self.get_group_lengths(self._num_exps)
 
         new_buffer = WeightedSamplingBuffer(lens[-1])
@@ -78,8 +105,8 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         weights = torch.rand(len(new_data))
 
         # create a mask, which masks the top q% and bottom s% of the learning speed
-        mask = (learning_speed > learning_speed.quantile(self.q)) & (
-            learning_speed < learning_speed.quantile(self.p)
+        mask = (learning_speed > learning_speed.quantile(self.lower_quantile_ls)) & (
+            learning_speed < learning_speed.quantile(self.upper_quantile_ls)
         )
         weights[mask] = (
             0  # set the weights of the samples in the mask to 0, so they are not included in the buffer
