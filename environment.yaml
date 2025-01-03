@@ -1,0 +1,11 @@
+# environment.yaml
+
+name: deep_learning
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.5
+  - anaconda
+  - pip
+  - pip:
+    - -r ./requirements.txt
