@@ -11,6 +11,9 @@ from geometric_aware_sampling.experiments.goldilocks.goldilocks_experiment impor
 from geometric_aware_sampling.experiments.naive.naive_baseline import (
     NaiveBaselineStrategy,
 )
+from geometric_aware_sampling.experiments.ppp_loss.ppp_loss_experiment import (
+    PPPLossStrategy,
+)
 from geometric_aware_sampling.experiments.replay.replay_baseline import (
     ReplayBaselineStrategy,
 )
@@ -49,6 +52,7 @@ def main():
     experiments = [
         RetrainBaselineStrategy,
         NaiveBaselineStrategy,
+        PPPLossStrategy,
         ReplayBaselineStrategy,
         GoldilocksBaselineStrategy,
         GeometricAwareSamplingStrategy,
