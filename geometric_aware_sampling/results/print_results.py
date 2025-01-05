@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
@@ -84,11 +86,12 @@ def print_results(overall_results, writer: SummaryWriter):
         for i, class_acc in enumerate(class_acc_history):
             xs = np.linspace(i, 5, len(class_acc))
 
-            train_acc = np.max(class_acc[: len(class_acc) // (5 - i)])
+            last_train_idx = math.floor(float(len(class_acc)) / (5 - i))
+            train_acc = np.max(class_acc[:last_train_idx])
             forgetting = train_acc - class_acc
 
             # set forgetting to zero before learning on the experience
-            forgetting[: len(class_acc) // (5 - i)] = 0
+            forgetting[:last_train_idx] = 0
             ax.plot(xs, forgetting, label=f"Testset with classes of task {i}")
 
         ax.set(
