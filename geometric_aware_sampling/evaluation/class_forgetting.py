@@ -99,7 +99,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
         self,
         predicted_y: Tensor,
         true_y: Tensor,
-        task_labels: Union[int, Tensor],
+        n_eval_stream: int,
     ) -> None:
         """
         Update the running accuracy (needed for forgetting)
@@ -109,24 +109,12 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
             are supported.
         :param true_y: The ground truth. Both labels and one-hot vectors
             are supported.
-        :param task_labels: the int task label associated to the current
-            experience or the task labels vector showing the task label
-            for each pattern.
+        :param n_eval_stream: the int number of evaluation streams associated to the current
+            experience (assuming that it is increased in every experience)
         :return: None.
         """
         if len(true_y) != len(predicted_y):
             raise ValueError("Size mismatch for true_y and predicted_y tensors")
-
-        if isinstance(task_labels, Tensor) and len(task_labels) != len(true_y):
-            raise ValueError("Size mismatch for true_y and task_labels tensors")
-
-        if not isinstance(task_labels, (int, Tensor)):
-            raise ValueError(
-                f"Task label type: {type(task_labels)}, " f"expected int or Tensor"
-            )
-
-        if isinstance(task_labels, int):
-            task_labels = [task_labels] * len(true_y)
 
         true_y = torch.as_tensor(true_y)
         predicted_y = torch.as_tensor(predicted_y)
@@ -140,12 +128,11 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
             # Logits -> transform to labels
             true_y = torch.max(true_y, 1)[1]
 
-        for pred, true, t in zip(predicted_y, true_y, task_labels):
-            t = int(t)
+        for pred, true in zip(predicted_y, true_y):
 
             if self.dynamic_classes:
                 if int(true) not in self.classes.keys():
-                    self.classes[int(true)] = t
+                    self.classes[int(true)] = n_eval_stream
             else:
                 if int(true) not in self.classes.keys():
                     continue
@@ -154,7 +141,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
                 (pred == true).float().item()
             )  # 1.0 or 0.0 (correct or false prediction)
             # weight = 1 since it is one number (batch size of 16: updated 16 times)
-            self._class_accuracies[int(true)][t].update(true_positives, 1)
+            self._class_accuracies[int(true)][n_eval_stream].update(true_positives, 1)
 
     def result(self) -> Dict[int, Dict[int, float]]:
         """
@@ -168,17 +155,19 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
         :return: A dictionary `{task_id -> {class_id -> running_forgetting}}`. The
             running forgetting value of each class is a float value between -1 and 1.
         """
-        running_class_forgetting: Dict[int, Dict[int, float]] = OrderedDict()
+        running_class_forgetting: Dict[int, Dict[int, float]] = dict()
 
         for class_id in sorted(self._class_accuracies.keys()):
             class_dict = self._class_accuracies[class_id]
             if len(class_dict.keys()) == 1:
                 # can only compute forgetting starting from the second task
                 continue
-            running_class_forgetting[class_id] = OrderedDict()
             for task_label in sorted(class_dict.keys()):
                 # compute forgetting for any task after the task where a class first appears
                 if task_label != self.classes[class_id]:
+                    # add dictionary per task label if it does not exist yet
+                    if not (task_label in running_class_forgetting.keys()):
+                        running_class_forgetting[task_label] = dict()
                     running_class_forgetting[task_label][class_id] = (
                         class_dict[self.classes[class_id]].result()
                         - class_dict[task_label].result()
@@ -188,16 +177,41 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
 
     def reset(self) -> None:
         """
-        Resets the metric.
+        Resets the metric. Not needed here since the accuracies for calculating
+        forgetting are always needed, do not need to be reset (if you want to calculate
+        forgetting, you always need the accuracies in the previous experiences)
+
+        Still implemented since it is called by other functions.
 
         :return: None.
         """
-        self._class_accuracies = defaultdict(lambda: defaultdict(Mean))
-        self.__init_accs_for_known_classes()
+        pass
+
+    def reset_experience(self, experience_id):
+        """
+        Resets the accuracy values for the specified experience.
+
+        :param experience_id: The experience for which the accuracy values should be reset
+
+        :return: None.
+        """
+        for class_id in self._class_accuracies.keys():
+            self._class_accuracies[class_id][experience_id].reset()
 
     def __init_accs_for_known_classes(self):
         for class_id, task_id in self.classes.items():
             self._class_accuracies[class_id][task_id].reset()
+
+    def __str__(self):
+        """
+        For tracking purposes: print the accuracy values
+        """
+        class_accuracies_str = "; ".join(
+            f"{class_id}, {experience_id}: {self._class_accuracies[class_id][experience_id].result()}"
+            for class_id in self._class_accuracies.keys()
+            for experience_id in self._class_accuracies[class_id].keys()
+        )
+        return class_accuracies_str
 
 
 class ClassForgettingPluginMetric(_ExtendedGenericPluginMetric[ClassForgetting]):
@@ -219,11 +233,22 @@ class ClassForgettingPluginMetric(_ExtendedGenericPluginMetric[ClassForgetting])
     def update(self, strategy: "SupervisedTemplate"):
         assert strategy.mb_output is not None
         assert strategy.experience is not None
-        self._metric.update(strategy.mb_output, strategy.mb_y, strategy.mb_task_id)
+        self._metric.update(
+            strategy.mb_output, strategy.mb_y, len(strategy.current_eval_stream)
+        )
 
         self.phase_name = "train" if strategy.is_training else "eval"
         self.stream_name = strategy.experience.origin_stream.name
         self.experience_id = strategy.experience.current_experience
+
+    def before_eval(self, strategy):
+        # important: accessing strategy.current_eval_stream only makes sense when
+        # in evaluation mode (returns an empty list when training)
+        self._metric.reset_experience(len(strategy.current_eval_stream))
+        return super().before_eval(strategy)
+
+    def after_eval_exp(self, strategy):
+        return super().after_eval_exp(strategy)
 
     def result(self) -> List[_ExtendedPluginMetricValue]:
         metric_values = []
