@@ -1,6 +1,8 @@
 import torch
+import random
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
+from avalanche.benchmarks.utils.utils import concat_datasets
 
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
@@ -24,7 +26,7 @@ def get_learning_speed(strategy: "SupervisedTemplate"):
     return learning_speed_plugin.learning_speed
 
 
-class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
+class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
     """Rehearsal buffer with samples balanced over experiences.
 
     The number of experiences can be fixed up front or adaptive, based on
@@ -35,34 +37,73 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
     def __init__(
         self,
         max_size: int,
+        replay_batch_size: int,
         adaptive_size: bool = True,
         num_experiences=None,
-        p: float = 0.25,
-        s: float = 0.75,
+        upper_q_ls: float = 0.25,
+        lower_q_ls: float = 0.75,
+        q: float = 0.4,
+        p: float = 1.0,
     ):
         """
         :param max_size: max number of total input samples in the replay
             memory.
+        :param replay_batch_size: number of training samples from replay buffer pool.
         :param adaptive_size: True if mem_size is divided equally over all
                               observed experiences (keys in replay_mem).
         :param num_experiences: If adaptive size is False, the fixed number
                                 of experiences to divide capacity over.
 
-        :param p: the upper quantile of the learning speed distribution that will
+        :param upper_q_ls: the upper quantile of the learning speed distribution that will
                   never be included in the buffer
 
-        :param s: the lower quantile of the learning speed distribution that will
+        :param lower_q_ls: the lower quantile of the learning speed distribution that will
                 never be included in the buffer
+
+        :param q: ratio of training samples to keep
+        :param p: ratio of buffer samples to use
         """
         super().__init__(max_size, adaptive_size, num_experiences)
+        self.replay_batch_size = replay_batch_size
+        self.pool_size = 0
         self._num_exps = 0
+        self.upper_quantile_ls = upper_q_ls
+        self.lower_quantile_ls = lower_q_ls
+        self.q = q
         self.p = p
-        self.q = s
+
+    def get_group_lengths(self, total_size, num_groups):
+        """Compute groups lengths given the number of groups `num_groups`."""
+        if self.adaptive_size:
+            lengths = [total_size // num_groups for _ in range(num_groups)]
+            # distribute remaining size among experiences.
+            rem = total_size - sum(lengths)
+            for i in range(rem):
+                lengths[i] += 1
+        else:
+            lengths = [total_size // self.total_num_groups for _ in range(num_groups)]
+        return lengths
+
+    @property
+    def buffer(self):
+        datasets = []
+        if self._num_exps > 0:
+            lens = self.get_group_lengths(self.replay_batch_size, self._num_exps)
+
+            for ll, b in zip(lens, self.buffer_groups.values()):
+                buf = b.buffer
+                l = min(ll, len(buf))
+                indices = random.sample(range(len(buf)), k=l)
+                datasets.append(buf.subset(indices))
+        return concat_datasets(datasets)
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
         self._num_exps += 1
         new_data = exp.dataset
-        lens = self.get_group_lengths(self._num_exps)
+        
+        self.pool_size += int (self.q * len(new_data))
+
+        lens = self.get_group_lengths(self.pool_size, self._num_exps)
 
         new_buffer = WeightedSamplingBuffer(lens[-1])
 
@@ -77,13 +118,11 @@ class LearningRateBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]
         # based on https://en.wikipedia.org/wiki/Reservoir_sampling
         weights = torch.rand(len(new_data))
 
-        # create a mask, which masks the top q% and bottom s% of the learning speed
-        mask = (learning_speed > learning_speed.quantile(self.q)) & (
-            learning_speed < learning_speed.quantile(self.p)
+        # create a mask, which masks the top and bottom of the learning speed
+        mask = (learning_speed > learning_speed.quantile(self.lower_quantile_ls)) & (
+            learning_speed < learning_speed.quantile(self.upper_quantile_ls)
         )
-        weights[mask] = (
-            0  # set the weights of the samples in the mask to 0, so they are not included in the buffer
-        )
+        weights[mask] = 0  # weights of samples in mask to 0 -> not included in the buffer
 
         new_buffer.update_from_dataset(new_data, weights=weights)
         self.buffer_groups[self._num_exps - 1] = new_buffer

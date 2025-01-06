@@ -9,15 +9,15 @@ from avalanche.training.plugins import (
 from avalanche.training.templates import SupervisedTemplate
 from packaging.version import parse
 
-from geometric_aware_sampling.experiments.goldilocks.learning_rate_balanced_buffer import (
-    LearningRateBalancedBuffer,
+from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_balanced_buffer import (
+    GeometricBalancedBuffer,
 )
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
 
 
-class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
+class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
     """
     Experience replay plugin based in the Goldilocks buffer sampling strategy.
     See https://arxiv.org/abs/2406.09935 for more details.
@@ -66,8 +66,8 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
         batch_size: Optional[int] = None,
         batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
-        p: float = 1 - 0.28,  # chosen according to the paper, figure 4 (a)
-        s: float = 0.52,  # chosen according to the paper, figure 4 (a)
+        upper_quantile: float = 1 - 0.28,  # chosen according to the paper, figure 4 (a)
+        lower_quantile: float = 0.52,  # chosen according to the paper, figure 4 (a)
     ):
         super().__init__()
         self.mem_size = mem_size
@@ -79,8 +79,8 @@ class GoldilocksPlugin(SupervisedPlugin, supports_distributed=False):
 
         # The storage policy samples the data based on the learning speed
         # and stores the samples in the external memory.
-        self.storage_policy = LearningRateBalancedBuffer(
-            max_size=self.mem_size, adaptive_size=True, p=p, s=s
+        self.storage_policy = GeometricBalancedBuffer(
+            max_size=self.mem_size, replay_batch_size=self.batch_size_mem, adaptive_size=True, upper_q_ls=upper_quantile, lower_q_ls=lower_quantile
         )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:
