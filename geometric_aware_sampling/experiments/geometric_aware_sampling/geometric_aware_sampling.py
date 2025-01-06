@@ -22,7 +22,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    mem_size=1000  # ~ 10% of the cifar100 dataset per task
+                    mem_size=100000  # ~ 10% of the cifar100 dataset per task
                 ),
                 RepresentationPlugin()
             ],

@@ -49,9 +49,9 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
     :param task_balanced_dataloader: if True, buffer data loaders will be
         task-balanced, otherwise it will create a single dataloader for the
         buffer samples.
-    :param p: the upper quantile of the learning speed distribution that will
+    :param upper_quantile: the upper quantile of the learning speed distribution that will
         never be included in the buffer
-    :param s: the lower quantile of the learning speed distribution that will
+    :param lower_quantile: the lower quantile of the learning speed distribution that will
         never be included in the buffer
 
     Based on the implementation of the ReplayPlugin from the Avalanche library.
@@ -80,7 +80,12 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         # The storage policy samples the data based on the learning speed
         # and stores the samples in the external memory.
         self.storage_policy = GeometricBalancedBuffer(
-            max_size=self.mem_size, replay_batch_size=self.batch_size_mem, adaptive_size=True, upper_q_ls=upper_quantile, lower_q_ls=lower_quantile
+            max_size=self.mem_size,
+            adaptive_size=True,
+            upper_quantile_ls=upper_quantile,
+            lower_quantile_ls=lower_quantile,
+            q=0.4,
+            p=1.0,
         )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:

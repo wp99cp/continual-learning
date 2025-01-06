@@ -37,11 +37,10 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
     def __init__(
         self,
         max_size: int,
-        replay_batch_size: int,
         adaptive_size: bool = True,
         num_experiences=None,
-        upper_q_ls: float = 0.25,
-        lower_q_ls: float = 0.75,
+        upper_quantile_ls: float = 0.25,
+        lower_quantile_ls: float = 0.75,
         q: float = 0.4,
         p: float = 1.0,
     ):
@@ -54,21 +53,20 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         :param num_experiences: If adaptive size is False, the fixed number
                                 of experiences to divide capacity over.
 
-        :param upper_q_ls: the upper quantile of the learning speed distribution that will
+        :param upper_quantile_ls: the upper quantile of the learning speed distribution that will
                   never be included in the buffer
 
-        :param lower_q_ls: the lower quantile of the learning speed distribution that will
+        :param lower_quantile_ls: the lower quantile of the learning speed distribution that will
                 never be included in the buffer
 
         :param q: ratio of training samples to keep
         :param p: ratio of buffer samples to use
         """
         super().__init__(max_size, adaptive_size, num_experiences)
-        self.replay_batch_size = replay_batch_size
         self.pool_size = 0
         self._num_exps = 0
-        self.upper_quantile_ls = upper_q_ls
-        self.lower_quantile_ls = lower_q_ls
+        self.upper_quantile_ls = upper_quantile_ls
+        self.lower_quantile_ls = lower_quantile_ls
         self.q = q
         self.p = p
 
@@ -88,11 +86,15 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
     def buffer(self):
         datasets = []
         if self._num_exps > 0:
-            lens = self.get_group_lengths(self.replay_batch_size, self._num_exps)
+            # Sample p% of all elements in the buffer pool
+            replay_size = int(self.p * self.pool_size)
+            # Sample evenly from all groups
+            lens = self.get_group_lengths(replay_size, self._num_exps)
 
             for ll, b in zip(lens, self.buffer_groups.values()):
                 buf = b.buffer
                 l = min(ll, len(buf))
+                # Sample l random indices without replacement
                 indices = random.sample(range(len(buf)), k=l)
                 datasets.append(buf.subset(indices))
         return concat_datasets(datasets)
@@ -100,11 +102,14 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
         self._num_exps += 1
         new_data = exp.dataset
-        
-        self.pool_size += int (self.q * len(new_data))
+
+        # Increase pool size by q% of all new samples
+        self.pool_size += int(self.q * len(new_data))
+        self.pool_size = min(self.pool_size, self.max_size)
 
         lens = self.get_group_lengths(self.pool_size, self._num_exps)
 
+        # Initialize buffer for new samples with a certain size
         new_buffer = WeightedSamplingBuffer(lens[-1])
 
         learning_speed = get_learning_speed(strategy)
@@ -122,10 +127,14 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         mask = (learning_speed > learning_speed.quantile(self.lower_quantile_ls)) & (
             learning_speed < learning_speed.quantile(self.upper_quantile_ls)
         )
-        weights[mask] = 0  # weights of samples in mask to 0 -> not included in the buffer
+        weights[mask] = (
+            0  # weights of samples in mask to 0 -> not included in the buffer
+        )
 
+        # set elements of new buffer based on new_data and random masked weights
         new_buffer.update_from_dataset(new_data, weights=weights)
         self.buffer_groups[self._num_exps - 1] = new_buffer
 
+        # resize other buffers
         for ll, b in zip(lens, self.buffer_groups.values()):
             b.resize(strategy, ll)
