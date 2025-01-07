@@ -1,11 +1,14 @@
 from avalanche.training.templates import SupervisedTemplate
 
 from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
+from geometric_aware_sampling.experiments.geometric_aware_sampling.batch_observer_plugin import (
+    BatchObserverPlugin,
+)
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plugin import (
     GeometricPlugin,
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.representation_plugin import (
-    RepresentationPlugin
+    RepresentationPlugin,
 )
 
 
@@ -24,6 +27,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
                 GeometricPlugin(
                     mem_size=100000  # ~ 10% of the cifar100 dataset per task
                 ),
-                RepresentationPlugin()
+                RepresentationPlugin(),
+                BatchObserverPlugin(normalize_steps=True),
             ],
         )

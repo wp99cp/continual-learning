@@ -6,7 +6,7 @@ import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
-from torch.optim.lr_scheduler import ExponentialLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
