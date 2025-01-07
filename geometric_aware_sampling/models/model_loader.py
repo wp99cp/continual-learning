@@ -1,4 +1,9 @@
-from geometric_aware_sampling.models.SlimResNet18 import SlimResNet18
+from geometric_aware_sampling.models.SlimResNet18 import (
+    SlimResNet18,
+    ResNet50,
+    ResNet101,
+    ResNet152,
+)
 
 
 def load_model(
@@ -11,6 +16,21 @@ def load_model(
 
     if model_name == "slim_resnet18":
         model = SlimResNet18(
+            input_dim=cl_dataset.train_stream[0].dataset[0][0].shape,
+            nclasses=cl_dataset.n_classes,
+        )
+    elif model_name == "resnet50":
+        model = ResNet50(
+            input_dim=cl_dataset.train_stream[0].dataset[0][0].shape,
+            nclasses=cl_dataset.n_classes,
+        )
+    elif model_name == "resnet101":
+        model = ResNet101(
+            input_dim=cl_dataset.train_stream[0].dataset[0][0].shape,
+            nclasses=cl_dataset.n_classes,
+        )
+    elif model_name == "resnet152":
+        model = ResNet152(
             input_dim=cl_dataset.train_stream[0].dataset[0][0].shape,
             nclasses=cl_dataset.n_classes,
         )

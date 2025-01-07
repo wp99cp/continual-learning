@@ -92,6 +92,19 @@ class ResNet(nn.Module):
         return out
 
 
-def SlimResNet18(nclasses, nf=20, input_dim=(1, 28, 28)):
+def SlimResNet18(nclasses, input_dim=(1, 28, 28)):
     """Slimmed ResNet18."""
-    return ResNet(BasicBlock, [2, 2, 2, 2], nclasses, nf, input_dim)
+    return ResNet(BasicBlock, [2, 2, 2, 2], nclasses, nf=64, input_dim=input_dim)
+
+
+def ResNet50(nclasses, input_dim=(1, 28, 28)):
+    """Slimmed ResNet18."""
+    return ResNet(BasicBlock, [3, 4, 6, 3], nclasses, nf=64, input_dim=input_dim)
+
+
+def ResNet101(nclasses, input_dim=(1, 28, 28)):
+    return ResNet(BasicBlock, [3, 4, 23, 3], nclasses, nf=64, input_dim=input_dim)
+
+
+def ResNet152(nclasses, input_dim=(1, 28, 28)):
+    return ResNet(BasicBlock, [3, 8, 36, 3], nclasses, nf=64, input_dim=input_dim)

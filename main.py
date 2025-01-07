@@ -39,10 +39,10 @@ def main():
 
     settings = {
         "args": args,
-        "dataset_name": "split_mnist",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
-        "model_name": "slim_resnet18",  # "slim_resnet18"
-        "batch_size": 16,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 12,
+        "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
+        "model_name": "slim_resnet18",  # "slim_resnet18", "resnet50", "resnet101", or "resnet152"
+        "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
+        "train_epochs": 36,
     }
 
     # define the number of repetitions for each experiment
