@@ -52,6 +52,9 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
     :param q: ratio of training samples to keep, sampled using Goldilocks
     :param p: ratio of buffer samples to use 1.0 means that we can use all samples, as long as the replay_ratio
         is below q, this means that we replay a sample at most 1 time per epoch.
+    :param sample_per_epoch: if True, the plugin will sample new replay samples
+        at the beginning of each epoch. Otherwise, it will sample new replay samples
+        at the beginning of each experience.
 
     Based on the implementation of the ReplayPlugin from the Avalanche library.
     Release under the MIT License. Source:
@@ -69,6 +72,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         lower_quantile: float = 0.52,  # chosen according to the paper, figure 4 (a)
         q: float = 0.4,
         p: float = 1.0,
+        sample_per_epoch: bool = True,  # we want new samples per epoch
     ):
         super().__init__()
         self.batch_size = None
@@ -91,6 +95,8 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             sampling_strategy=sampling_strategy,
         )
 
+        self.sample_per_epoch = sample_per_epoch
+
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:
         """Adds the learning speed plugin to the strategy."""
 
@@ -104,7 +110,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         else:
             print("WARNING: LearningSpeedPlugin already added to the strategy")
 
-    def before_training_exp(
+    def __sample_new_replay_samples(
         self,
         strategy: "SupervisedTemplate",
         num_workers: int = 0,
@@ -112,19 +118,16 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         drop_last: bool = False,
         **kwargs
     ):
-        """
-        before_training_exp to customize the dataloader
 
-        Dataloader to build batches containing examples from both memories and
-        the training dataset
-        """
+        # save buffer as local var to only call it once
+        buffer = self.storage_policy.buffer
 
-        if len(self.storage_policy.buffer) == 0:
+        if len(buffer) == 0:
             # first experience. We don't use the buffer, no need to change
             # the dataloader.
             return
 
-        # batch size split for task_idx > 1 (replay samples versus new samples)
+            # batch size split for task_idx > 1 (replay samples versus new samples)
         global_batch_size = strategy.train_mb_size
 
         assert (
@@ -153,7 +156,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
 
         strategy.dataloader = ReplayDataLoader(
             strategy.adapted_dataset,
-            self.storage_policy.buffer,
+            buffer,
             oversample_small_tasks=True,
             batch_size=batch_size,
             batch_size_mem=batch_size_mem,
@@ -163,6 +166,16 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             drop_last=drop_last,
             **other_dataloader_args
         )
+
+    def before_training_epoch(self, strategy: "SupervisedTemplate", **kwargs):
+
+        if self.sample_per_epoch:
+            self.__sample_new_replay_samples(strategy, **kwargs)
+
+    def before_training_exp(self, strategy: "SupervisedTemplate", **kwargs):
+
+        if not self.sample_per_epoch:
+            self.__sample_new_replay_samples(strategy, **kwargs)
 
     def after_training_exp(self, strategy: "SupervisedTemplate", **kwargs):
         """
