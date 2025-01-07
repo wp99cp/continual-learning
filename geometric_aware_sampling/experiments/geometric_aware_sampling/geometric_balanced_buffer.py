@@ -93,6 +93,9 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
 
     @property
     def buffer(self):
+        return self.get_buffer(None)
+
+    def get_buffer(self, current_model: torch.nn.Module | None):
 
         # nothing to replay from
         if self._num_classes == 0:
@@ -109,7 +112,9 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         )
 
         return self.replay_sampler.sample(
-            replay_size=replay_size, _num_exps=self._num_classes
+            replay_size=replay_size,
+            _num_exps=self._num_classes,
+            current_model=current_model,
         )
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
@@ -123,7 +128,6 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         self.pool_size = min(self.pool_size, self.max_size)
 
         lens = self.get_group_lengths(self.pool_size, self._num_classes)
-
 
         learning_speed = get_learning_speed(strategy)
         if learning_speed is None:
@@ -149,7 +153,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
             idx = self._num_classes - len(unique_labels) + i
             new_buffer = WeightedSamplingBuffer(lens[idx])
             # set elements of new buffer based on new_data and random masked weights
-            mask_label = (lbls_tensor != l) 
+            mask_label = lbls_tensor != l
             weights_l = weights.clone()
             weights_l[mask_label] = 0
             new_buffer.update_from_dataset(new_data, weights=weights_l)

@@ -2,6 +2,7 @@ import random
 from abc import ABC
 
 import numpy as np
+import torch
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
@@ -12,9 +13,15 @@ class BufferSamplingStrategy(ABC):
     def __init__(self, balanced_buffer: BalancedExemplarsBuffer):
         self.balanced_buffer = balanced_buffer
 
-    def sample(self, replay_size: int, _num_exps: int) -> AvalancheDataset:
+    def sample(
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+    ) -> AvalancheDataset:
         """
         Sample elements from the buffer.
+        :param current_model: the current model.
         :param replay_size: Number of samples to draw.
         :param _num_exps: Number of experiences.
         :return: A dataset with the sampled elements.
@@ -41,7 +48,12 @@ class RandomSamplingStrategy(BufferSamplingStrategy):
     number of samples per experience. This is used for baseline 1.
     """
 
-    def sample(self, replay_size: int, _num_exps: int) -> AvalancheDataset:
+    def sample(
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+    ) -> AvalancheDataset:
         datasets = []
 
         # Sample evenly from all groups
@@ -64,13 +76,13 @@ class RandomWeightedSamplingStrategy(BufferSamplingStrategy):
     sampling strategy.
     """
 
-    def sample(self, replay_size: int, _num_exps: int) -> AvalancheDataset:
-        """
-        Sample elements using an exponential distribution.
+    def sample(
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+    ) -> AvalancheDataset:
 
-        :param replay_size: Number of samples to draw.
-        :param _num_exps: (Unused, included for compatibility with other sampling strategies).
-        """
         buffer = self.complete_buffer
         print(f"sampling {replay_size} from a buffer with {len(buffer)} samples.")
 
