@@ -30,12 +30,12 @@ def main():
         "n_experiences": 20,
         "stop_after_n_experiences": 5,  # only trains the first n_experiences resp. tasks then stops
         "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 4,
+        "train_epochs": 36,
     }
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 1
+    repetitions = 5
 
     experiments = [
         ###################################

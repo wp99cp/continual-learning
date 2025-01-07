@@ -19,7 +19,7 @@ MAX_MEMORY_SIZE = 100_000
 # ratio of training samples to keep in the buffer per task
 # e.g. if task0 contains 100 samples split among 10 classes
 # we keep 40 samples in the buffer split among all 10 classes
-Q = 0.25
+Q = 0.25  # for cifar100 with 20 tasks that is 625 samples per task
 
 # ratio of new samples / buffer samples to use
 # setting replay_ration = 1.0 will double the batch size
@@ -27,7 +27,7 @@ Q = 0.25
 # have for task_idx > 1 a batch size of 128 with 64 new samples
 # and 64 buffer samples (replay samples)
 # this was the default before the introduction of the replay_ratio
-REPLAY_RATIO = 0.25  # that is 16 samples per mini-batch
+REPLAY_RATIO = 7.0 / 32  # that is 14 samples per mini-batch
 
 
 class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
@@ -54,7 +54,7 @@ class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
                     # random sampling is done during mini-batch creation
                     # this should be equivalent to sampling the correct number of
                     # samples here, then we have no selection during mini-batch creation
-                    p=625,  # fixed replay pool, TODO: tune per dataset
+                    p=555,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
@@ -79,7 +79,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=625,  # fixed replay pool, TODO: tune per dataset
+                    p=555,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
