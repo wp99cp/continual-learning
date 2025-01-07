@@ -66,7 +66,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
                 never be included in the buffer
 
         :param q: ratio of training samples to keep
-        :param p: ratio of buffer samples to use
+        :param p: ratio of buffer samples to use, if p > 1.0 we treat p as a fixed value for the number of samples
         :param sampling_strategy: the sampling strategy to use for replay (e.g. random or geometry based)
         """
         super().__init__(max_size, adaptive_size, num_experiences)
@@ -99,7 +99,10 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
             return concat_datasets([])
 
         # Sample p% of all elements in the buffer pool
-        replay_size = int(self.p * self.pool_size)
+        # or fixed size if p > 1.0
+        replay_size = int(self.p)
+        if self.p <= 1.0:
+            replay_size = int(self.p * self.pool_size)
 
         print(
             f"Sampling {replay_size} samples from buffer using {self.replay_sampler.__class__.__name__}"

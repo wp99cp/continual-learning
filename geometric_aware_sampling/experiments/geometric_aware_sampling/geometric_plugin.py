@@ -51,7 +51,8 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         never be included in the buffer
     :param q: ratio of training samples to keep, sampled using Goldilocks
     :param p: ratio of buffer samples to use 1.0 means that we can use all samples, as long as the replay_ratio
-        is below q, this means that we replay a sample at most 1 time per epoch.
+        is below q, this means that we replay a sample at most 1 time per epoch. If p is above 1.0, we treat
+        p as a fixed value for the number of samples to replay per epoch.
     :param sample_per_epoch: if True, the plugin will sample new replay samples
         at the beginning of each epoch. Otherwise, it will sample new replay samples
         at the beginning of each experience.

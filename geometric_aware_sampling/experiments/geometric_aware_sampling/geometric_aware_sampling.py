@@ -50,6 +50,7 @@ class GeometricAwareSamplingStrategy__Baseline_1(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
+                    p=1.0,  # we use all samples in the buffer
                 ),
                 RepresentationPlugin(),
             ],
@@ -74,6 +75,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
+                    p=625,  # fixed replay pool
                 ),
                 RepresentationPlugin(),
             ],
