@@ -146,7 +146,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
 
         for i, l in enumerate(unique_labels):
             # Initialize buffer for new samples with a certain size
-            idx = self._num_classes - 1 + i
+            idx = self._num_classes - len(unique_labels) + i
             new_buffer = WeightedSamplingBuffer(lens[idx])
             # set elements of new buffer based on new_data and random masked weights
             mask_label = (lbls_tensor != l) 
