@@ -135,6 +135,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
                 cumulative_counts,
                 cumulative_counts + counts,
                 color=color,
+                step="post",
                 label=f"Task {task_id}" if task_id not in plotted_tasks else None,
             )
             cumulative_counts += counts
