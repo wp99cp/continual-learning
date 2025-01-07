@@ -16,6 +16,9 @@ from avalanche.training.plugins import EvaluationPlugin
 from torch import Tensor
 
 from geometric_aware_sampling.evaluation.cm_image_creator import cm_image_creator
+from geometric_aware_sampling.evaluation.class_forgetting import (
+    class_forgetting_metrics,
+)
 from geometric_aware_sampling.evaluation.track_classification_error import (
     classification_tracker,
 )
@@ -58,6 +61,7 @@ def get_evaluator(n_classes, loggers: BaseLogger | Sequence[BaseLogger] = None):
         ##########################
         forgetting_metrics(experience=True, stream=True),
         classification_tracker(experience=True),
+        class_forgetting_metrics(experience=True),
         bwt_metrics(experience=True, stream=True),
         confusion_matrix_metrics(
             num_classes=n_classes,
