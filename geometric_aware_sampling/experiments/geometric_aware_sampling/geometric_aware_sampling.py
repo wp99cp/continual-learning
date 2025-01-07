@@ -49,6 +49,5 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
                     batch_size_mem=int(self.batch_size * replay_ratio),
                 ),
                 RepresentationPlugin(),
-                BatchObserverPlugin(normalize_steps=True),
             ],
         )
