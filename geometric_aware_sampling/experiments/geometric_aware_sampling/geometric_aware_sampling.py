@@ -30,7 +30,7 @@ Q = 0.25
 REPLAY_RATIO = 0.25  # that is 16 samples per mini-batch
 
 
-class GeometricAwareSamplingStrategy__Baseline_1(BaseExperimentStrategy):
+class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
     """
 
     This strategy implements the baseline 1 for the Geometric Aware Sampling.
@@ -54,7 +54,7 @@ class GeometricAwareSamplingStrategy__Baseline_1(BaseExperimentStrategy):
                     # random sampling is done during mini-batch creation
                     # this should be equivalent to sampling the correct number of
                     # samples here, then we have no selection during mini-batch creation
-                    p=1.0,
+                    p=625,  # fixed replay pool, TODO: tune per dataset
                 ),
                 RepresentationPlugin(),
             ],
