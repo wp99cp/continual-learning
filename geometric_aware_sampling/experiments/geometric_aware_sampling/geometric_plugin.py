@@ -84,7 +84,12 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             adaptive_size=True,
             upper_quantile_ls=upper_quantile,
             lower_quantile_ls=lower_quantile,
+            # ratio of training samples to keep, sampled using Goldilocks
             q=0.4,
+            # ratio of buffer samples to use
+            # 1.0 means that we can use all samples, as long as the replay_ratio
+            # is below q, this means that we replay a sample at most 1 time per
+            # epoch.
             p=1.0,
         )
 

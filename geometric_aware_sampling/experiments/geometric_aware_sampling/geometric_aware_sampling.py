@@ -21,11 +21,32 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
     """
 
     def create_cl_strategy(self):
+
+        # ratio of new samples / buffer samples to use
+        # setting replay_ration = 1.0 will double the batch size
+        # for task_idx > 1, e.g. if batch_size is set to 64, we
+        # have for task_idx > 1 a batch size of 128 with 64 new samples
+        # and 64 buffer samples (replay samples)
+        # this was the default before the introduction of the replay_ratio
+        replay_ratio = 0.25
+        assert (
+            self.batch_size % (1.0 / replay_ratio) <= 1e-9
+        ), "batch size must be divisible by 1 / replay_ratio"
+
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    mem_size=100000  # ~ 10% of the cifar100 dataset per task
+                    # full cifar100 dataset (however this is just a theoretical value)
+                    # we store less samples per task in the buffer (see q value inside the plugin)
+                    mem_size=100000,
+                    # batch size split for task_idx > 1 (replay samples versus new samples)
+                    batch_size=(
+                        int(self.batch_size * (1 - replay_ratio))
+                        if replay_ratio < 1
+                        else self.batch_size
+                    ),
+                    batch_size_mem=int(self.batch_size * replay_ratio),
                 ),
                 RepresentationPlugin(),
                 BatchObserverPlugin(normalize_steps=True),
