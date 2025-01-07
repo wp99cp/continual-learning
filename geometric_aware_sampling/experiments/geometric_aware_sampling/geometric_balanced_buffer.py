@@ -124,6 +124,10 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         self._num_classes += len(unique_labels)
 
         # Increase pool size by q% of all new samples
+        print(f"Adding {int(self.q * len(new_data))} samples to the buffer")
+        print(
+            f" » that is {int(self.q * 100)}% of the current epoch dataset of length {len(new_data)}"
+        )
         self.pool_size += int(self.q * len(new_data))
         self.pool_size = min(self.pool_size, self.max_size)
 
