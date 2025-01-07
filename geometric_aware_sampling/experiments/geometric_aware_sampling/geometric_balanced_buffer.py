@@ -117,6 +117,14 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
             current_model=current_model,
         )
 
+    def log_buffer_summary(
+        self, kwargs, task_idx: int, buffer_name: str = "GeometricBalanced"
+    ):
+        for c, buffer in self.buffer_groups.items():
+            buffer.log_buffer_summary(
+                kwargs, task_idx, f"buffer_class_{c}--" + buffer_name
+            )
+
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
         new_data = exp.dataset
         lbls_tensor = torch.tensor([x[1] for x in new_data])
@@ -157,7 +165,8 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
             weights_l = weights.clone()
             weights_l[mask_label] = 0
             new_buffer.update_from_dataset(new_data, weights=weights_l)
-            self.buffer_groups[idx] = new_buffer
+            # Index buffers by classes
+            self.buffer_groups[l] = new_buffer
 
         # resize other buffers
         for ll, b in zip(lens, self.buffer_groups.values()):

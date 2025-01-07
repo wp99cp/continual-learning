@@ -97,6 +97,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         )
 
         self.sample_per_epoch = sample_per_epoch
+        self.task_idx = 0
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:
         """Adds the learning speed plugin to the strategy."""
@@ -183,4 +184,9 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         uses after_training_exp to update the buffer after each training experience
         """
 
+        self.task_idx += 1
         self.storage_policy.post_adapt(strategy, strategy.experience)
+        if hasattr(self.storage_policy, "log_buffer_summary") and callable(
+            getattr(self.storage_policy, "log_buffer_summary")
+        ):
+            self.storage_policy.log_buffer_summary(kwargs, task_idx)
