@@ -4,7 +4,6 @@ from abc import abstractmethod
 
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
-from avalanche.training.templates.problem_type import SupervisedProblem
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -42,6 +41,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         train_epochs: int = 5,
         seed: int = 42,
         n_experiences: int = 5,
+        stop_after_n_experiences: int = -1,
     ):
         """
         Initialize the experiment
@@ -52,6 +52,9 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         :param batch_size: the batch size
         :param train_epochs: the number of training epochs
         :param seed: the random seed
+        :param n_experiences: the number of experiences
+        :param stop_after_n_experiences: only train the first n_experiences, then stop
+             -1 means train all experiences
         """
 
         self.args = args
@@ -61,6 +64,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.train_epochs = train_epochs
         self.seed = seed
         self.n_experiences = n_experiences
+        self.stop_after_n_experiences = stop_after_n_experiences
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -198,6 +202,12 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
                 eval_streams=[self.cl_dataset.test_stream[:i]],
                 tensorboard_logger=self.tensorboard_logger,
             )
+
+            if i == self.stop_after_n_experiences:
+                print(
+                    f"Stop training after {self.stop_after_n_experiences} experiences!"
+                )
+                break
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
 

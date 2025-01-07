@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any
 
 import torch
 from avalanche.benchmarks.utils.data_loader import ReplayDataLoader
@@ -36,16 +36,9 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
     plugin which adds a dimension to the data that contains the learning speed of the samples.
     The learning speed is updated on every mini-batch.
 
-    The :mem_size: attribute controls the total number of samples to be stored
-    in the external memory.
-
-    :param batch_size: the size of the data batch. If set to `None`, it
-        will be set equal to the strategy's batch size.
-    :param batch_size_mem: the size of the memory batch. If
-        `task_balanced_dataloader` is set to True, it must be greater than or
-        equal to the number of tasks. If its value is set to `None`
-        (the default value), it will be automatically set equal to the
-        data batch size.
+    :param replay_ratio: the ratio of replay samples to new samples in the mini-batch.
+    :param mem_size: attribute controls the total number of samples to be stored
+        in the external memory.
     :param task_balanced_dataloader: if True, buffer data loaders will be
         task-balanced, otherwise it will create a single dataloader for the
         buffer samples.
@@ -53,6 +46,9 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         never be included in the buffer
     :param lower_quantile: the lower quantile of the learning speed distribution that will
         never be included in the buffer
+    :param q: ratio of training samples to keep, sampled using Goldilocks
+    :param p: ratio of buffer samples to use 1.0 means that we can use all samples, as long as the replay_ratio
+        is below q, this means that we replay a sample at most 1 time per epoch.
 
     Based on the implementation of the ReplayPlugin from the Avalanche library.
     Release under the MIT License. Source:
@@ -62,17 +58,19 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
 
     def __init__(
         self,
+        replay_ratio: float = 0.25,
         mem_size: int = 200,
-        batch_size: Optional[int] = None,
-        batch_size_mem: Optional[int] = None,
         task_balanced_dataloader: bool = False,
         upper_quantile: float = 1 - 0.28,  # chosen according to the paper, figure 4 (a)
         lower_quantile: float = 0.52,  # chosen according to the paper, figure 4 (a)
+        q: float = 0.4,
+        p: float = 1.0,
     ):
         super().__init__()
+        self.batch_size = None
+        self.batch_size_mem = None
         self.mem_size = mem_size
-        self.batch_size = batch_size
-        self.batch_size_mem = batch_size_mem
+        self.replay_ratio = replay_ratio
         self.task_balanced_dataloader = task_balanced_dataloader
 
         self.has_added_learning_speed_plugin = False
@@ -84,13 +82,8 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             adaptive_size=True,
             upper_quantile_ls=upper_quantile,
             lower_quantile_ls=lower_quantile,
-            # ratio of training samples to keep, sampled using Goldilocks
-            q=0.4,
-            # ratio of buffer samples to use
-            # 1.0 means that we can use all samples, as long as the replay_ratio
-            # is below q, this means that we replay a sample at most 1 time per
-            # epoch.
-            p=1.0,
+            q=q,
+            p=p,
         )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:
@@ -126,13 +119,19 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             # the dataloader.
             return
 
-        batch_size = self.batch_size
-        if batch_size is None:
-            batch_size = strategy.train_mb_size
+        # batch size split for task_idx > 1 (replay samples versus new samples)
+        global_batch_size = strategy.train_mb_size
 
-        batch_size_mem = self.batch_size_mem
-        if batch_size_mem is None:
-            batch_size_mem = strategy.train_mb_size
+        assert (
+            global_batch_size % (1.0 / self.replay_ratio) <= 1e-9
+        ), "batch size must be divisible by (1 / replay_ratio)"
+
+        batch_size = (
+            int(global_batch_size * (1 - self.replay_ratio))
+            if self.replay_ratio < 1
+            else global_batch_size
+        )
+        batch_size_mem = int(global_batch_size * self.replay_ratio)
 
         assert strategy.adapted_dataset is not None
 
