@@ -189,4 +189,4 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         if hasattr(self.storage_policy, "log_buffer_summary") and callable(
             getattr(self.storage_policy, "log_buffer_summary")
         ):
-            self.storage_policy.log_buffer_summary(kwargs, task_idx)
+            self.storage_policy.log_buffer_summary(kwargs, self.task_idx)
