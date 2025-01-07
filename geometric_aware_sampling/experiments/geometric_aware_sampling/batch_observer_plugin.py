@@ -141,7 +141,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
             cumulative_counts += counts
             plotted_tasks.add(task_id)
 
-        ax.set_xlabel("Epoch")
+        ax.set_xlabel("epoch idx")
         ax.set_ylabel(legend_y_label)
         ax.legend(loc="upper center", ncol=5)
 
@@ -158,7 +158,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         self.__print(
             self.full_batch_composition_history,
             kwargs,
-            "class/task composition",
+            "replayed samples per class/task",
             (
                 "Class/Task Composition of a Minibatch (Training Set)"
                 if self.normalize
@@ -168,7 +168,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         self.__print(
             self.full_different_composition_history,
             kwargs,
-            "different samples",
+            "unique samples per class/task",
             (
                 "Unique Samples per Class/Task in a Minibatch (Training Set)"
                 if self.normalize
