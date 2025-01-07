@@ -62,6 +62,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
             created immediately (with a default value of 0.0) and plots
             will be aligned across all classes. In addition, this can be used to
             restrict the classes for which the forgetting should be logged.
+            Important: the first experience ID is 1 (not 0)
         """
 
         self.classes: Dict[int, int] = defaultdict(int)
@@ -74,11 +75,14 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
         If True, newly encountered classes will be tracked.
         """
 
-        self._class_accuracies: Dict[int, Dict[int, Mean]] = defaultdict(
-            lambda: defaultdict(Mean)
-        )
+        self._class_initial: Dict[int, Mean] = dict()
         """
-        A dictionary "class_id -> {task_id -> accuracy_on_this_class_id_after_training_on_this_task_id}".
+        A dictionary "class_id -> initial accuracy measured".
+        """
+
+        self._class_last: Dict[int, Mean] = dict()
+        """
+        A dictionary "class_id -> most recent accuracy measured".
         """
 
         if classes is not None:
@@ -92,15 +96,8 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
         else:
             self.dynamic_classes = True
 
-        self.__init_accs_for_known_classes()
-
     @torch.no_grad()
-    def update(
-        self,
-        predicted_y: Tensor,
-        true_y: Tensor,
-        n_eval_stream: int,
-    ) -> None:
+    def update(self, predicted_y: Tensor, true_y: Tensor, exp_id: int) -> None:
         """
         Update the running accuracy (needed for forgetting)
         given the true and predicted labels for each class.
@@ -109,8 +106,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
             are supported.
         :param true_y: The ground truth. Both labels and one-hot vectors
             are supported.
-        :param n_eval_stream: the int number of evaluation streams associated to the current
-            experience (assuming that it is increased in every experience)
+        :param exp_id: current experience id
         :return: None.
         """
         if len(true_y) != len(predicted_y):
@@ -132,7 +128,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
 
             if self.dynamic_classes:
                 if int(true) not in self.classes.keys():
-                    self.classes[int(true)] = n_eval_stream
+                    self.classes[int(true)] = exp_id
             else:
                 if int(true) not in self.classes.keys():
                     continue
@@ -140,76 +136,103 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
             true_positives = (
                 (pred == true).float().item()
             )  # 1.0 or 0.0 (correct or false prediction)
-            # weight = 1 since it is one number (batch size of 16: updated 16 times)
-            self._class_accuracies[int(true)][n_eval_stream].update(true_positives, 1)
+
+            if not (int(true) in self._class_initial.keys()):
+                # set up initial
+                self._class_initial[int(true)] = Mean()
+                self._class_initial[int(true)].update(true_positives, 1)
+            else:
+                # in the first experience in which a class appears: update initial
+                if exp_id == self.classes[int(true)]:
+                    self._class_initial[int(true)].update(true_positives, 1)
+                else:
+                    # update last
+                    if not (int(true) in self._class_last.keys()):
+                        self._class_last[int(true)] = Mean()
+                    # weight = 1 since it is one number (batch size of 16: updated 16 times)
+                    self._class_last[int(true)].update(true_positives, 1)
+
+    def result_class(self, c: int) -> Optional[float]:
+        """
+        Compute the forgetting for a specific class.
+
+        :param c: the class for which to return forgetting
+
+        :return: the difference between the first and last value encountered
+            for c, if c is not None. It returns None if c has not been updated
+            at least twice (i.e., value in the initial and last accuracy dict)
+        """
+        if c in self._class_initial and c in self._class_last:
+            return self._class_initial[c].result() - self._class_last[c].result()
+        else:
+            return None
 
     def result(self) -> Dict[int, Dict[int, float]]:
         """
-        Retrieves the running forgetting value for each class.
+        Compute the forgetting for all classes.
         Forgetting = - BWT
         BWT (per class c) = accuracy on c after task k (latest task)
-                            - accuracy on c after task j (first task containing c)
+                            - accuracy on c after task j (initial task containing c)
 
         Calling this method will not change the internal state of the metric.
 
-        :return: A dictionary `{task_id -> {class_id -> running_forgetting}}`. The
+        :return: A dictionary `class_id -> running_forgetting`. The
             running forgetting value of each class is a float value between -1 and 1.
         """
-        running_class_forgetting: Dict[int, Dict[int, float]] = dict()
 
-        for class_id in sorted(self._class_accuracies.keys()):
-            class_dict = self._class_accuracies[class_id]
-            if len(class_dict.keys()) == 1:
-                # can only compute forgetting starting from the second task
-                continue
-            for task_label in sorted(class_dict.keys()):
-                # compute forgetting for any task after the task where a class first appears
-                if task_label != self.classes[class_id]:
-                    # add dictionary per task label if it does not exist yet
-                    if not (task_label in running_class_forgetting.keys()):
-                        running_class_forgetting[task_label] = dict()
-                    running_class_forgetting[task_label][class_id] = (
-                        class_dict[self.classes[class_id]].result()
-                        - class_dict[task_label].result()
-                    )
+        ik = set(self._class_initial.keys())
+        both_keys = list(ik.intersection(set(self._class_last.keys())))
 
-        return running_class_forgetting
+        forgetting: Dict[int, float] = {}
+        for k in both_keys:
+            forgetting[k] = (
+                self._class_initial[k].result() - self._class_last[k].result()
+            )
+
+        return forgetting
+
+    def reset_last(self, exp_id) -> None:
+        """
+        Resets the last value recorded for all classes.
+
+        If reset is called inside an experience after the experience
+            in which a class first appears, initial is never reset.
+
+        :param exp_id: The current experience id
+
+        :return: None
+        """
+        for class_id in self._class_initial.keys():
+            if class_id in self._class_last.keys():
+                self._class_last[class_id].reset()
+            else:
+                if exp_id != self.classes[class_id]:
+                    continue
+                self._class_initial[class_id].reset()
 
     def reset(self) -> None:
         """
-        Resets the metric. Not needed here since the accuracies for calculating
-        forgetting are always needed, do not need to be reset (if you want to calculate
-        forgetting, you always need the accuracies in the previous experiences)
-
-        Still implemented since it is called by other functions.
+        Resets the metric. Not needed here since reset_last can be used but it
+        is still implemented since it is called by functions of the inherited classes.
 
         :return: None.
         """
         pass
 
-    def reset_experience(self, experience_id):
-        """
-        Resets the accuracy values for the specified experience.
-
-        :param experience_id: The experience for which the accuracy values should be reset
-
-        :return: None.
-        """
-        for class_id in self._class_accuracies.keys():
-            self._class_accuracies[class_id][experience_id].reset()
-
-    def __init_accs_for_known_classes(self):
-        for class_id, task_id in self.classes.items():
-            self._class_accuracies[class_id][task_id].reset()
-
     def __str__(self):
         """
         For tracking purposes: print the accuracy values
+
+        One value displayed per class: only the initial value
+        Two values displayed: initial and last value
         """
         class_accuracies_str = "; ".join(
-            f"{class_id}, {experience_id}: {self._class_accuracies[class_id][experience_id].result()}"
-            for class_id in self._class_accuracies.keys()
-            for experience_id in self._class_accuracies[class_id].keys()
+            (
+                f"{class_id}: {self._class_initial[class_id].result()}, {self._class_last[class_id].result()}"
+                if class_id in self._class_last.keys()
+                else f"{class_id}: {self._class_initial[class_id].result()}"
+            )
+            for class_id in self._class_initial.keys()
         )
         return class_accuracies_str
 
@@ -228,45 +251,37 @@ class ClassForgettingPluginMetric(_ExtendedGenericPluginMetric[ClassForgetting])
         )
         self.phase_name = "train"
         self.stream_name = "train"
-        self.experience_id = 0
 
     def update(self, strategy: "SupervisedTemplate"):
         assert strategy.mb_output is not None
         assert strategy.experience is not None
         self._metric.update(
-            strategy.mb_output, strategy.mb_y, len(strategy.current_eval_stream)
+            strategy.mb_output, strategy.mb_y, strategy.clock.train_exp_counter
         )
 
         self.phase_name = "train" if strategy.is_training else "eval"
         self.stream_name = strategy.experience.origin_stream.name
-        self.experience_id = strategy.experience.current_experience
 
     def before_eval(self, strategy):
-        # important: accessing strategy.current_eval_stream only makes sense when
-        # in evaluation mode (returns an empty list when training)
-        self._metric.reset_experience(len(strategy.current_eval_stream))
+        self._metric.reset_last(strategy.clock.train_exp_counter)
         return super().before_eval(strategy)
-
-    def after_eval_exp(self, strategy):
-        return super().after_eval_exp(strategy)
 
     def result(self) -> List[_ExtendedPluginMetricValue]:
         metric_values = []
-        task_forgetting = self._metric.result()
+        forgetting = self._metric.result()
 
-        for task_id, task_classes in task_forgetting.items():
-            for class_id, class_forgetting in task_classes.items():
-                metric_values.append(
-                    _ExtendedPluginMetricValue(
-                        metric_name=str(self),
-                        metric_value=class_forgetting,
-                        phase_name=self.phase_name,
-                        stream_name=self.stream_name,
-                        task_label=task_id,
-                        experience_id=self.experience_id,
-                        class_id=class_id,
-                    )
+        for class_id, class_forgetting in forgetting.items():
+            metric_values.append(
+                _ExtendedPluginMetricValue(
+                    metric_name=str(self),
+                    metric_value=class_forgetting,
+                    phase_name=self.phase_name,
+                    stream_name=self.stream_name,
+                    experience_id=None,
+                    task_label=None,
+                    class_id=class_id,
                 )
+            )
 
         return metric_values
 
@@ -297,7 +312,7 @@ class ExperienceClassForgetting(ClassForgettingPluginMetric):
         Creates an instance of ExperienceClassForgetting metric
         """
         super().__init__(
-            reset_at="experience",
+            reset_at="experience",  # no impact since reset() does nothing
             emit_at="experience",
             mode="eval",
             classes=classes,
