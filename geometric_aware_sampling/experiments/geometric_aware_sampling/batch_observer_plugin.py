@@ -96,6 +96,15 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         legend_y_label,
         title,
     ):
+
+        # create copy of history
+        history = {label: counts.copy() for label, counts in history.items()}
+
+        # add a final column with all zeros
+        # this is necessary to plot the last epoch correctly
+        for label in history.keys():
+            history[label].append(0)
+
         # Create a stacked plot of the batch composition
         fig, ax = plt.subplots(figsize=(10, 5), dpi=250)
 
@@ -103,13 +112,12 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         cumulative_counts = np.zeros_like(next(iter(history.values())))
 
         # Define a base colormap for each task
-        assert len(set(self.task_lookup.values())) <= 5
         task_colormaps = {
             0: plt.cm.Blues,
             1: plt.cm.Greens,
-            2: plt.cm.Oranges,
+            2: plt.cm.Reds,
             3: plt.cm.Purples,
-            4: plt.cm.Reds,
+            4: plt.cm.Greys,
         }
 
         # Keep track of how many classes each task has to assign shades
@@ -127,7 +135,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
             )
 
             # Use a specific colormap and generate shades
-            colormap = task_colormaps[task_id]
+            colormap = task_colormaps[task_id % len(task_colormaps)]
             color = colormap((class_idx + 1) / (task_class_counts[task_id] + 1))
 
             # Plot the current class
