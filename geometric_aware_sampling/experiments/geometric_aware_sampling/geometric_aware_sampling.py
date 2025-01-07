@@ -50,7 +50,11 @@ class GeometricAwareSamplingStrategy__Baseline_1(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=1.0,  # we use all samples in the buffer
+                    # we use all samples in the buffer,
+                    # random sampling is done during mini-batch creation
+                    # this should be equivalent to sampling the correct number of
+                    # samples here, then we have no selection during mini-batch creation
+                    p=1.0,
                 ),
                 RepresentationPlugin(),
             ],
@@ -75,7 +79,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=625,  # fixed replay pool
+                    p=625,  # fixed replay pool, TODO: tune per dataset
                 ),
                 RepresentationPlugin(),
             ],
