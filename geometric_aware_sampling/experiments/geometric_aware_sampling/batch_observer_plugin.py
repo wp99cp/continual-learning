@@ -73,6 +73,12 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
                 float(len(self.different_composition[label])) / normalization_factor
             )
 
+        # back-fill with zeros for labels that were not encountered in this epoch
+        for label in self.full_batch_composition_history.keys():
+            if label not in self.batch_composition:
+                self.full_batch_composition_history[label].append(0)
+                self.full_different_composition_history[label].append(0)
+
         self.history_length += 1
 
     def after_training_exp(self, strategy: Template, *args, **kwargs) -> Any:
