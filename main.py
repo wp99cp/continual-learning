@@ -11,6 +11,9 @@ from geometric_aware_sampling.experiments.goldilocks.goldilocks_experiment impor
 from geometric_aware_sampling.experiments.naive.naive_baseline import (
     NaiveBaselineStrategy,
 )
+from geometric_aware_sampling.experiments.ppp_loss.ppp_loss_experiment import (
+    PPPLossStrategy,
+)
 from geometric_aware_sampling.experiments.replay.replay_baseline import (
     ReplayBaselineStrategy,
 )
@@ -37,20 +40,21 @@ def main():
     settings = {
         "args": args,
         "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
-        "model_name": "slim_resnet18",  # "slim_resnet18"
-        "batch_size": 16,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 12,
+        "model_name": "slim_resnet18",  # "slim_resnet18", "resnet50", "resnet101", or "resnet152"
+        "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
+        "train_epochs": 36,
     }
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 5
+    repetitions = 1
 
     experiments = [
-        RetrainBaselineStrategy,
-        NaiveBaselineStrategy,
-        ReplayBaselineStrategy,
-        GoldilocksBaselineStrategy,
+        # RetrainBaselineStrategy,
+        # NaiveBaselineStrategy,
+        # PPPLossStrategy,
+        # ReplayBaselineStrategy,
+        # GoldilocksBaselineStrategy,
         GeometricAwareSamplingStrategy,
     ]
 

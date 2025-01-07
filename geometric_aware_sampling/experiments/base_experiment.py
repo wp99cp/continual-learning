@@ -4,13 +4,24 @@ from abc import abstractmethod
 
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
+from avalanche.training.templates.problem_type import SupervisedProblem
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
+from geometric_aware_sampling.experiments.geometric_aware_sampling.batch_observer_plugin import (
+    BatchObserverPlugin,
+)
+from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+    SampleIdxPlugin,
+)
 from geometric_aware_sampling.models.model_loader import load_model
 from geometric_aware_sampling.utils.hardware_info import print_hardware_info
+from geometric_aware_sampling.utils.logged_lr_scheduler_plugin import (
+    LoggedLRSchedulerPlugin,
+)
 from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
 from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
@@ -60,9 +71,20 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.tensorboard_logger = TensorboardLogger(
             f"{TENSORBOARD_DIR}/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")}__{method_name}"
         )
+        self.report_base_settings()
 
         self.__print_model_name()
         self.__setup__()
+
+    def report_base_settings(self):
+        self.tensorboard_logger.writer.add_scalar(
+            "hyperparameters/batch_size", self.batch_size
+        )
+        self.tensorboard_logger.writer.add_scalar(
+            "hyperparameters/train_epochs", self.train_epochs
+        )
+        self.tensorboard_logger.writer.add_text("model_name", self.model_name)
+        self.tensorboard_logger.writer.add_text("dataset_name", self.dataset_name)
 
     def __setup__(self):
         print_hardware_info(self.args)
@@ -83,7 +105,13 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         )
 
         self.optimizer = Adam(
-            self.model.parameters(), betas=(0.9, 0.999), lr=0.001, weight_decay=1e-5
+            self.model.parameters(), betas=(0.9, 0.999), lr=0.001, weight_decay=1e-4
+        )
+
+        # learning rate scheduler (could also be ReduceLROnPlateau or
+        # any other scheduler from torch.optim.lr_scheduler)
+        self.scheduler = ReduceLROnPlateau(
+            self.optimizer, mode="min", factor=0.25, patience=1, cooldown=5
         )
 
         self.criterion = CrossEntropyLoss()
@@ -96,6 +124,24 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             self.cl_dataset.n_classes, [self.tensorboard_logger, InteractiveLogger()]
         )
         self.cl_strategy = self.create_cl_strategy()
+
+        # add learning rate scheduler
+        lr_scheduler_plugin = LoggedLRSchedulerPlugin(
+            scheduler=self.scheduler,
+            # the following argument is only used for the ReduceLROnPlateau scheduler
+            metric="train_loss",  # we should not use validation loss as this leaks information
+        )
+        self.cl_strategy.plugins.append(lr_scheduler_plugin)
+
+        # add batch observer plugin
+
+        sample_idx_plugin = SampleIdxPlugin()
+        self.cl_strategy.plugins.append(sample_idx_plugin)
+
+        batch_observer_plugin = BatchObserverPlugin(
+            normalize_steps=True, strategy_name=self.__class__.__name__
+        )
+        self.cl_strategy.plugins.append(batch_observer_plugin)
 
     def __print_model_name(self):
         print(
