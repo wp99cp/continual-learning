@@ -155,14 +155,16 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
     def after_training(self, strategy: Template, *args, **kwargs) -> Any:
         self.task_idx += 1
 
+        strategy_name = strategy.__class__.__name__
+
         self.__print(
             self.full_batch_composition_history,
             kwargs,
             "replayed samples per class/task",
             (
-                "Class/Task Composition of a Minibatch (Training Set)"
+                f"Class/Task Composition of a Minibatch ({strategy_name})"
                 if self.normalize
-                else "Class/Task Composition of a Epoch (Training Set)"
+                else f"Class/Task Composition of a Epoch ({strategy_name})"
             ),
         )
         self.__print(
@@ -170,8 +172,8 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
             kwargs,
             "unique samples per class/task",
             (
-                "Unique Samples per Class/Task in a Minibatch (Training Set)"
+                f"Unique Samples per Class/Task in a Minibatch ({strategy_name})"
                 if self.normalize
-                else "Unique Samples per Class/Task in an Epoch (Training Set)"
+                else f"Unique Samples per Class/Task in an Epoch ({strategy_name})"
             ),
         )
