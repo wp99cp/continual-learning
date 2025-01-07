@@ -164,7 +164,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         self.__print(
             self.full_batch_composition_history,
             kwargs,
-            "samples per class/task",
+            ("samples per minibatch" if self.normalize else "samples per epoch"),
             (
                 f"Class/Task Composition of a Minibatch ({strategy_name})"
                 if self.normalize
@@ -174,7 +174,11 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         self.__print(
             self.full_different_composition_history,
             kwargs,
-            "unique samples per class/task",
+            (
+                "unique samples per minibatch"
+                if self.normalize
+                else "unique samples per epoch"
+            ),
             (
                 f"Unique Samples per Class/Task in a Minibatch ({strategy_name})"
                 if self.normalize
