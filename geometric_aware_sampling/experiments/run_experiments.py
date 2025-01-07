@@ -15,7 +15,7 @@ def run_experiments(experiments, repetitions, settings):
 
             try:
                 for rep in range(repetitions):
-                    exp = experiment_class(**settings)
+                    exp = experiment_class(seed=rep * 42, **settings)
                     exp.run()
                     results.append(exp.get_results())
 

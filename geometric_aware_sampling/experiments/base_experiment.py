@@ -40,6 +40,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         model_name: str = "slim_resnet18",
         batch_size: int = 16,
         train_epochs: int = 5,
+        seed: int = 42,
+        n_experiences: int = 5,
     ):
         """
         Initialize the experiment
@@ -47,6 +49,9 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         :param args: the command line arguments
         :param dataset_name: the name of the dataset, either "split_mnist" or "split_cifar100"
         :param model_name: the name of the model, currently only "slim_resnet18"
+        :param batch_size: the batch size
+        :param train_epochs: the number of training epochs
+        :param seed: the random seed
         """
 
         self.args = args
@@ -54,6 +59,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.model_name = model_name
         self.batch_size = batch_size
         self.train_epochs = train_epochs
+        self.seed = seed
+        self.n_experiences = n_experiences
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -96,6 +103,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.cl_dataset = load_dataset(
             self.dataset_name,
             print_summary=True,  # print summary statistics of the dataset / experience
+            n_experiences=self.n_experiences,
+            seed=self.seed,
             tensorboard_logger=self.tensorboard_logger,
         )
 
