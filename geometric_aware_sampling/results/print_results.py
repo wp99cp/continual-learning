@@ -1,7 +1,8 @@
 import math
 
 import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
+from matplotlib.patches import Patch
 from torch.utils.tensorboard import SummaryWriter
 
 from geometric_aware_sampling.results.evolution_graphs.top1_accuracy_evolution_graph import (
@@ -112,6 +113,70 @@ def print_results(overall_results, writer: SummaryWriter):
 
         ########################################################################################################
         # END: forgetting plot
+        ########################################################################################################
+
+        ########################################################################################################
+        # START: correctly classified samples plot
+        ########################################################################################################
+
+        # TODO the following only consider the first run
+
+        correctly_classified = []
+        length = -1
+
+        for key in results[0].keys():
+            if "ClassificationTracker_Exp/eval_phase/test_stream/Task000/Exp000" in key:
+                correctly_classified.append(np.array(results[0][key][1]))
+
+                if length == -1:
+                    length = len(results[0][key][1])
+                else:
+                    assert length == len(results[0][key][1])
+
+        last_train_idx = math.floor(length / 5.0)
+
+        # sort correctly_classified by the accumulated number of correctly classified samples
+        # over the range [0, last_train_idx]
+        correctly_classified = sorted(
+            correctly_classified, key=lambda x: np.sum(x[:last_train_idx])
+        )
+
+        fig, ax = plt.subplots(figsize=(10, 4), dpi=300)
+
+        cmap = cm.get_cmap("viridis")  # Get the reversed colormap
+        ax.imshow(np.array(correctly_classified), cmap=cmap, aspect="auto")
+
+        # use special labels [0, 1, 2, 3, 4, 5] for the x-axis
+        # evenly spaced on the range [0, length]
+        ax.set_xticks(np.linspace(0, length, 6))
+        ax.set_xticklabels([0, 1, 2, 3, 4, 5])
+
+        # hide y-axis
+        ax.get_yaxis().set_visible(False)
+
+        ax.set(
+            xlabel="Start of Training Task i",
+            title=f"Correctly Classified Samples {__strategy_name}",
+        )
+
+        # Extract colors from the colormap for 0 and 1
+        color_incorrect = cmap(0.0)
+        color_correct = cmap(1.0)
+
+        # Define legend manually using exact colors
+        legend_labels = [
+            Patch(color=color_incorrect, label="Incorrect"),
+            Patch(color=color_correct, label="Correct"),
+        ]
+        ax.legend(handles=legend_labels, loc="upper right")
+
+        # save the plot to tensorboard
+        writer.add_figure(
+            f"{__strategy_name}/correctly_classified_samples", fig, global_step=0
+        )
+
+        ########################################################################################################
+        # END: correctly classified samples plot
         ########################################################################################################
 
     print("\n\n\n")
