@@ -160,7 +160,7 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         self.__print(
             self.full_batch_composition_history,
             kwargs,
-            "replayed samples per class/task",
+            "samples per class/task",
             (
                 f"Class/Task Composition of a Minibatch ({strategy_name})"
                 if self.normalize
