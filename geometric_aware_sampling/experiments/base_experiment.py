@@ -138,7 +138,9 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         sample_idx_plugin = SampleIdxPlugin()
         self.cl_strategy.plugins.append(sample_idx_plugin)
 
-        batch_observer_plugin = BatchObserverPlugin(normalize_steps=True)
+        batch_observer_plugin = BatchObserverPlugin(
+            normalize_steps=True, strategy_name=self.__class__.__name__
+        )
         self.cl_strategy.plugins.append(batch_observer_plugin)
 
     def __print_model_name(self):

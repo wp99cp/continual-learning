@@ -10,10 +10,11 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
     A plugin that observes the batch size and batch composition of the data
     """
 
-    def __init__(self, normalize_steps: bool = True):
+    def __init__(self, normalize_steps: bool = True, strategy_name: str = None):
         super().__init__()
 
         self.normalize = normalize_steps
+        self.strategy_name = strategy_name
 
         self.full_batch_composition_history = {}
         self.batch_composition = {}
@@ -156,6 +157,9 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
         self.task_idx += 1
 
         strategy_name = strategy.__class__.__name__
+
+        if self.strategy_name is not None:
+            strategy_name = self.strategy_name
 
         self.__print(
             self.full_batch_composition_history,
