@@ -4,12 +4,19 @@ from abc import abstractmethod
 
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
+from avalanche.training.templates.problem_type import SupervisedProblem
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
-from torch.optim.lr_scheduler import ExponentialLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
+from geometric_aware_sampling.experiments.geometric_aware_sampling.batch_observer_plugin import (
+    BatchObserverPlugin,
+)
+from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+    SampleIdxPlugin,
+)
 from geometric_aware_sampling.models.model_loader import load_model
 from geometric_aware_sampling.utils.hardware_info import print_hardware_info
 from geometric_aware_sampling.utils.logged_lr_scheduler_plugin import (
@@ -125,6 +132,16 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             metric="train_loss",  # we should not use validation loss as this leaks information
         )
         self.cl_strategy.plugins.append(lr_scheduler_plugin)
+
+        # add batch observer plugin
+
+        sample_idx_plugin = SampleIdxPlugin()
+        self.cl_strategy.plugins.append(sample_idx_plugin)
+
+        batch_observer_plugin = BatchObserverPlugin(
+            normalize_steps=True, strategy_name=self.__class__.__name__
+        )
+        self.cl_strategy.plugins.append(batch_observer_plugin)
 
     def __print_model_name(self):
         print(

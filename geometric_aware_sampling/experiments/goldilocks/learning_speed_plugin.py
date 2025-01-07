@@ -26,25 +26,7 @@ def mb_task_id(self):
 SupervisedProblem.mb_task_id = mb_task_id
 
 
-class LearningSpeedPlugin(SupervisedPlugin, supports_distributed=False):
-    """
-    A plugin that keeps track of the learning speed of the samples of the current task.
-
-    The learning speed is computed as the ratio of the number of times a sample is correctly classified
-    over the number of epochs it is trained on (under the assumption that every sample is included in exactly
-    one mini-batch per epoch).
-
-    We only keep track of the learning speed of the samples from the current task. Samples injected
-    by the replay strategy are not considered.
-
-    """
-
-    def __init__(self):
-        super().__init__()
-
-        self.__correctly_classified_counter = None
-        self.learning_speed = None
-        self.epoch_counter = 0
+class SampleIdxPlugin(SupervisedPlugin, supports_distributed=False):
 
     def before_train_dataset_adaptation(self, strategy: "SupervisedTemplate", **kwargs):
         """
@@ -68,6 +50,29 @@ class LearningSpeedPlugin(SupervisedPlugin, supports_distributed=False):
                 data=range(len(dataset)), name="idx", use_in_getitem=True
             ),
         )
+
+
+class LearningSpeedPlugin(SupervisedPlugin, supports_distributed=False):
+    """
+    A plugin that keeps track of the learning speed of the samples of the current task.
+
+    The learning speed is computed as the ratio of the number of times a sample is correctly classified
+    over the number of epochs it is trained on (under the assumption that every sample is included in exactly
+    one mini-batch per epoch).
+
+    We only keep track of the learning speed of the samples from the current task. Samples injected
+    by the replay strategy are not considered.
+
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.__correctly_classified_counter = None
+        self.learning_speed = None
+        self.epoch_counter = 0
+
+    def before_train_dataset_adaptation(self, strategy: "SupervisedTemplate", **kwargs):
 
         self.learning_speed = torch.zeros(
             len(strategy.experience.dataset), dtype=torch.float32

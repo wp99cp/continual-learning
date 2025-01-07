@@ -40,9 +40,9 @@ def main():
     settings = {
         "args": args,
         "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
-        "model_name": "resnet152",  # "slim_resnet18", "resnet50", "resnet101", or "resnet152"
-        "batch_size": 96,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 120,
+        "model_name": "slim_resnet18",  # "slim_resnet18", "resnet50", "resnet101", or "resnet152"
+        "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
+        "train_epochs": 36,
     }
 
     # define the number of repetitions for each experiment
@@ -50,11 +50,11 @@ def main():
     repetitions = 1
 
     experiments = [
-        RetrainBaselineStrategy,
-        NaiveBaselineStrategy,
-        PPPLossStrategy,
-        ReplayBaselineStrategy,
-        GoldilocksBaselineStrategy,
+        # RetrainBaselineStrategy,
+        # NaiveBaselineStrategy,
+        # PPPLossStrategy,
+        # ReplayBaselineStrategy,
+        # GoldilocksBaselineStrategy,
         GeometricAwareSamplingStrategy,
     ]
 
