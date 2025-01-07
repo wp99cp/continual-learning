@@ -160,9 +160,9 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
             kwargs,
             "class/task composition",
             (
-                "Class/Task Composition of a Minibatch"
+                "Class/Task Composition of a Minibatch (Training Set)"
                 if self.normalize
-                else "Class/Task Composition of a Epoch"
+                else "Class/Task Composition of a Epoch (Training Set)"
             ),
         )
         self.__print(
@@ -170,8 +170,8 @@ class BatchObserverPlugin(SupervisedPlugin, supports_distributed=False):
             kwargs,
             "different samples",
             (
-                "Unique Samples per Class/Task in a Minibatch"
+                "Unique Samples per Class/Task in a Minibatch (Training Set)"
                 if self.normalize
-                else "Unique Samples per Class/Task in an Epoch"
+                else "Unique Samples per Class/Task in an Epoch (Training Set)"
             ),
         )
