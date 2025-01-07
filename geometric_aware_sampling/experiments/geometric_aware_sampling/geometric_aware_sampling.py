@@ -4,6 +4,10 @@ from geometric_aware_sampling.experiments.base_experiment import BaseExperimentS
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plugin import (
     GeometricPlugin,
 )
+from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
+    RandomSamplingStrategy,
+    RandomWeightedSamplingStrategy,
+)
 from geometric_aware_sampling.experiments.geometric_aware_sampling.representation_plugin import (
     RepresentationPlugin,
 )
@@ -42,6 +46,7 @@ class GeometricAwareSamplingStrategy__Baseline_1(BaseExperimentStrategy):
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
+                    sampling_strategy=RandomSamplingStrategy,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
@@ -65,6 +70,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
+                    sampling_strategy=RandomWeightedSamplingStrategy,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,

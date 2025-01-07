@@ -1,9 +1,14 @@
+from typing import Type
+
 import torch
-import random
+from avalanche.benchmarks.utils.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
-from avalanche.benchmarks.utils.utils import concat_datasets
 
+from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
+    RandomSamplingStrategy,
+    BufferSamplingStrategy,
+)
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
@@ -43,6 +48,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         lower_quantile_ls: float = 0.75,
         q: float = 0.4,
         p: float = 1.0,
+        sampling_strategy: Type[BufferSamplingStrategy] = RandomSamplingStrategy,
     ):
         """
         :param max_size: max number of total input samples in the replay
@@ -61,6 +67,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
 
         :param q: ratio of training samples to keep
         :param p: ratio of buffer samples to use
+        :param sampling_strategy: the sampling strategy to use for replay (e.g. random or geometry based)
         """
         super().__init__(max_size, adaptive_size, num_experiences)
         self.pool_size = 0
@@ -69,6 +76,8 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         self.lower_quantile_ls = lower_quantile_ls
         self.q = q
         self.p = p
+
+        self.replay_sampler = sampling_strategy(balanced_buffer=self)
 
     def get_group_lengths(self, total_size, num_groups):
         """Compute groups lengths given the number of groups `num_groups`."""
@@ -84,20 +93,21 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
 
     @property
     def buffer(self):
-        datasets = []
-        if self._num_exps > 0:
-            # Sample p% of all elements in the buffer pool
-            replay_size = int(self.p * self.pool_size)
-            # Sample evenly from all groups
-            lens = self.get_group_lengths(replay_size, self._num_exps)
 
-            for ll, b in zip(lens, self.buffer_groups.values()):
-                buf = b.buffer
-                l = min(ll, len(buf))
-                # Sample l random indices without replacement
-                indices = random.sample(range(len(buf)), k=l)
-                datasets.append(buf.subset(indices))
-        return concat_datasets(datasets)
+        # nothing to replay from
+        if self._num_exps == 0:
+            return concat_datasets([])
+
+        # Sample p% of all elements in the buffer pool
+        replay_size = int(self.p * self.pool_size)
+
+        print(
+            f"Sampling {replay_size} samples from buffer using {self.replay_sampler.__class__.__name__}"
+        )
+
+        return self.replay_sampler.sample(
+            replay_size=replay_size, _num_exps=self._num_exps
+        )
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
         self._num_exps += 1

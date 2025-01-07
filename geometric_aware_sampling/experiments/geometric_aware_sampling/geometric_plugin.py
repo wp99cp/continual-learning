@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Type
 
 import torch
 from avalanche.benchmarks.utils.data_loader import ReplayDataLoader
@@ -11,6 +11,9 @@ from packaging.version import parse
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_balanced_buffer import (
     GeometricBalancedBuffer,
+)
+from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
+    BufferSamplingStrategy,
 )
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
@@ -58,6 +61,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
 
     def __init__(
         self,
+        sampling_strategy: Type[BufferSamplingStrategy],
         replay_ratio: float = 0.25,
         mem_size: int = 200,
         task_balanced_dataloader: bool = False,
@@ -84,6 +88,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             lower_quantile_ls=lower_quantile,
             q=q,
             p=p,
+            sampling_strategy=sampling_strategy,
         )
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:

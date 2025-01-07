@@ -3,12 +3,7 @@ import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
-    GeometricAwareSamplingStrategy__Baseline_1,
     GeometricAwareSamplingStrategy,
-    GeometricAwareSamplingStrategy__Baseline_2,
-)
-from geometric_aware_sampling.experiments.replay.replay_baseline import (
-    ReplayBaselineStrategy,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -29,12 +24,12 @@ def main():
 
     settings = {
         "args": args,
-        "dataset_name": "split_mnist",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
+        "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
         "model_name": "slim_resnet18",  # "slim_resnet18", "resnet50", "resnet101", or "resnet152"
-        "n_experiences": 5,
+        "n_experiences": 20,
         "stop_after_n_experiences": 5,  # only trains the first n_experiences resp. tasks then stops
         "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 2,
+        "train_epochs": 4,
     }
 
     # define the number of repetitions for each experiment
@@ -66,7 +61,7 @@ def main():
         # all the following baselines use the same buffer
         # size and batch size throughout the experiments
         ###################################
-        GeometricAwareSamplingStrategy__Baseline_1,
+        # GeometricAwareSamplingStrategy__Baseline_1,
         GeometricAwareSamplingStrategy,
     ]
 
