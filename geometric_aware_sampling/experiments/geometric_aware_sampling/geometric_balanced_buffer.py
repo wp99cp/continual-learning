@@ -71,7 +71,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         """
         super().__init__(max_size, adaptive_size, num_experiences)
         self.pool_size = 0
-        self._num_exps = 0
+        self._num_classes = 0
         self.upper_quantile_ls = upper_quantile_ls
         self.lower_quantile_ls = lower_quantile_ls
         self.q = q
@@ -95,7 +95,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
     def buffer(self):
 
         # nothing to replay from
-        if self._num_exps == 0:
+        if self._num_classes == 0:
             return concat_datasets([])
 
         # Sample p% of all elements in the buffer pool
@@ -106,21 +106,21 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         )
 
         return self.replay_sampler.sample(
-            replay_size=replay_size, _num_exps=self._num_exps
+            replay_size=replay_size, _num_exps=self._num_classes
         )
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
-        self._num_exps += 1
         new_data = exp.dataset
+        lbls_tensor = torch.tensor([x[1] for x in new_data])
+        unique_labels = torch.unique(lbls_tensor)
+        self._num_classes += len(unique_labels)
 
         # Increase pool size by q% of all new samples
         self.pool_size += int(self.q * len(new_data))
         self.pool_size = min(self.pool_size, self.max_size)
 
-        lens = self.get_group_lengths(self.pool_size, self._num_exps)
+        lens = self.get_group_lengths(self.pool_size, self._num_classes)
 
-        # Initialize buffer for new samples with a certain size
-        new_buffer = WeightedSamplingBuffer(lens[-1])
 
         learning_speed = get_learning_speed(strategy)
         if learning_speed is None:
@@ -141,9 +141,16 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
             0  # weights of samples in mask to 0 -> not included in the buffer
         )
 
-        # set elements of new buffer based on new_data and random masked weights
-        new_buffer.update_from_dataset(new_data, weights=weights)
-        self.buffer_groups[self._num_exps - 1] = new_buffer
+        for i, l in enumerate(unique_labels):
+            # Initialize buffer for new samples with a certain size
+            idx = self._num_classes - 1 + i
+            new_buffer = WeightedSamplingBuffer(lens[idx])
+            # set elements of new buffer based on new_data and random masked weights
+            mask_label = (lbls_tensor != l) 
+            weights_l = weights.clone()
+            weights_l[mask_label] = 0
+            new_buffer.update_from_dataset(new_data, weights=weights_l)
+            self.buffer_groups[idx] = new_buffer
 
         # resize other buffers
         for ll, b in zip(lens, self.buffer_groups.values()):
