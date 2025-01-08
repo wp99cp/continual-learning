@@ -26,7 +26,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
     The Class Forgetting metric. This is a standalone metric
     used to compute more specific ones.
 
-    Instances of this metric keep the running average forgetting
+    Instances of this metric keep the running accuracy (to compute forgetting)
     over multiple <prediction, target> pairs of Tensors,
     provided incrementally.
     The "prediction" and "target" tensors may contain plain labels or
@@ -37,10 +37,6 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
     The set of classes to be tracked can be reduced (please refer to the
     constructor parameters).
 
-    The reset method will bring the metric to its initial state. By default,
-    this metric in its initial state will return a
-    `{task_id -> {class_id -> forgetting}}` dictionary in which all forgetting values are
-    set to 0.
     """
 
     def __init__(self, classes: Optional[TrackedClassesType] = None):
@@ -62,7 +58,6 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
             created immediately (with a default value of 0.0) and plots
             will be aligned across all classes. In addition, this can be used to
             restrict the classes for which the forgetting should be logged.
-            Important: the first experience ID is 1 (not 0)
         """
 
         self.classes: Dict[int, int] = defaultdict(int)
@@ -196,7 +191,7 @@ class ClassForgetting(Metric[Dict[int, Dict[int, float]]]):
         Resets the last value recorded for all classes.
 
         If reset is called inside an experience after the experience
-            in which a class first appears, initial is never reset.
+            in which a class first appears, initial is never reset for this class
 
         :param exp_id: The current experience id
 
@@ -322,31 +317,9 @@ class ExperienceClassForgetting(ClassForgettingPluginMetric):
         return "Top1_ClassForgetting_Exp"
 
 
-class StreamClassForgetting(ClassForgettingPluginMetric):
-    """
-    At the end of the entire stream of experiences, this plugin metric
-    reports the average forgetting over all patterns seen in all experiences
-    (separately for each class).
-
-    This metric only works at eval time.
-    """
-
-    def __init__(self, classes=None):
-        """
-        Creates an instance of StreamClassForgetting metric
-        """
-        super().__init__(
-            reset_at="stream", emit_at="stream", mode="eval", classes=classes
-        )
-
-    def __str__(self):
-        return "Top1_ClassForgetting_Stream"
-
-
 def class_forgetting_metrics(
     *,
     experience=False,
-    stream=False,
     classes=None,
 ) -> List[ClassForgettingPluginMetric]:
     """
@@ -355,9 +328,6 @@ def class_forgetting_metrics(
 
     :param experience: If True, will return a metric able to log
         the per-class forgetting on each evaluation experience.
-    :param stream: If True, will return a metric able to log
-        the per-class forgetting averaged over the entire evaluation stream of
-        experiences.
     :param classes: The list of classes to track. See the corresponding
         parameter of :class:`ClassForgetting` for a precise explanation.
 
@@ -368,9 +338,6 @@ def class_forgetting_metrics(
     if experience:
         metrics.append(ExperienceClassForgetting(classes=classes))
 
-    if stream:
-        metrics.append(StreamClassForgetting(classes=classes))
-
     return metrics
 
 
@@ -378,6 +345,5 @@ __all__ = [
     "TrackedClassesType",
     "ClassForgetting",
     "ExperienceClassForgetting",
-    "StreamClassForgetting",
     "class_forgetting_metrics",
 ]
