@@ -7,6 +7,7 @@ from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plu
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     RandomSamplingStrategy,
     RandomWeightedSamplingStrategy,
+    DistanceWeightedSamplingStrategy,
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.representation_plugin import (
     RepresentationPlugin,
@@ -76,6 +77,32 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
             plugins=[
                 GeometricPlugin(
                     sampling_strategy=RandomWeightedSamplingStrategy,
+                    replay_ratio=REPLAY_RATIO,
+                    mem_size=MAX_MEMORY_SIZE,
+                    q=Q,
+                    p=555,  # TODO: tune per dataset to ensure unique samples
+                ),
+                RepresentationPlugin(),
+            ],
+        )
+
+
+class GeometricAwareSamplingStrategyWeightedSampling(BaseExperimentStrategy):
+    """
+
+    Implements the Geometric Aware Sampling continual learning strategy
+    as described in our paper with weighted sampling according to the distance of
+    means.
+
+    """
+
+    def create_cl_strategy(self):
+
+        return SupervisedTemplate(
+            **self.default_settings,
+            plugins=[
+                GeometricPlugin(
+                    sampling_strategy=DistanceWeightedSamplingStrategy,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,

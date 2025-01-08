@@ -122,7 +122,9 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
     ):
 
         # save buffer as local var to only call it once
-        buffer = self.storage_policy.get_buffer(current_model=strategy.model)
+        buffer = self.storage_policy.get_buffer(
+            current_model=strategy.model, experience_dataset=strategy.experience.dataset
+        )
 
         if len(buffer) == 0:
             # first experience. We don't use the buffer, no need to change

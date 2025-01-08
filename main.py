@@ -5,6 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
     GeometricAwareSamplingStrategy,
     GeometricAwareSamplingStrategy_Baseline_1,
+    GeometricAwareSamplingStrategyWeightedSampling,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -62,6 +63,7 @@ def main():
         # all the following baselines use the same buffer
         # size and batch size throughout the experiments
         ###################################
+        GeometricAwareSamplingStrategyWeightedSampling,
         GeometricAwareSamplingStrategy_Baseline_1,
         GeometricAwareSamplingStrategy,
     ]

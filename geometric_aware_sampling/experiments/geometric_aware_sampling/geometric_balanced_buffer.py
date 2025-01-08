@@ -95,7 +95,11 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
     def buffer(self):
         return self.get_buffer(None)
 
-    def get_buffer(self, current_model: torch.nn.Module | None):
+    def get_buffer(
+        self,
+        current_model: torch.nn.Module | None,
+        experience_dataset: torch.utils.data.Dataset,
+    ):
 
         # nothing to replay from
         if self._num_classes == 0:
@@ -115,6 +119,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
             replay_size=replay_size,
             _num_exps=self._num_classes,
             current_model=current_model,
+            current_exp_dataset=experience_dataset,
         )
 
     def log_buffer_summary(
