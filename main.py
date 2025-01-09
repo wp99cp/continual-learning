@@ -3,9 +3,10 @@ import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
-    GeometricAwareSamplingStrategy,
     GeometricAwareSamplingStrategy_Baseline_1,
     GeometricAwareSamplingStrategyWeightedSampling,
+    GeometricAwareSamplingStrategyScattering,
+    GeometricAwareSamplingStrategyWeightedSamplingExp,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -26,7 +27,7 @@ def main():
 
     # if enabled we randomize the class-task mapping for every repetition
     # this is useful to get a more stable estimate of the performance
-    randomize_class_task_mapping = False
+    randomize_class_task_mapping = True
 
     settings = {
         "args": args,
@@ -35,12 +36,12 @@ def main():
         "n_experiences": 5,
         "stop_after_n_experiences": 5,  # only trains the first n_experiences resp. tasks then stops
         "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 36,
+        "train_epochs": 100,
     }
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 5
+    repetitions = 10
 
     experiments = [
         ###################################
@@ -67,9 +68,10 @@ def main():
         # all the following baselines use the same buffer
         # size and batch size throughout the experiments
         ###################################
-        GeometricAwareSamplingStrategyWeightedSampling,
         GeometricAwareSamplingStrategy_Baseline_1,
-        GeometricAwareSamplingStrategy,
+        GeometricAwareSamplingStrategyWeightedSamplingExp,
+        GeometricAwareSamplingStrategyScattering,
+        GeometricAwareSamplingStrategyWeightedSampling,
     ]
 
     overall_results = {}

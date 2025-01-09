@@ -6,8 +6,9 @@ from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plu
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     RandomSamplingStrategy,
-    RandomWeightedSamplingStrategy,
     DistanceWeightedSamplingStrategy,
+    DistanceWeightedScattering,
+    DistanceWeightedSamplingStrategyExp,
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.representation_plugin import (
     RepresentationPlugin,
@@ -20,7 +21,7 @@ MAX_MEMORY_SIZE = 100_000
 # ratio of training samples to keep in the buffer per task
 # e.g. if task0 contains 100 samples split among 10 classes
 # we keep 40 samples in the buffer split among all 10 classes
-Q = 0.25  # for cifar100 with 20 tasks that is 625 samples per task
+Q = 0.40
 
 # ratio of new samples / buffer samples to use
 # setting replay_ration = 1.0 will double the batch size
@@ -28,7 +29,7 @@ Q = 0.25  # for cifar100 with 20 tasks that is 625 samples per task
 # have for task_idx > 1 a batch size of 128 with 64 new samples
 # and 64 buffer samples (replay samples)
 # this was the default before the introduction of the replay_ratio
-REPLAY_RATIO = 7.0 / 32  # that is 14 samples per mini-batch
+REPLAY_RATIO = 8.0 / 64  # that is 8 samples per mini-batch
 
 
 class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
@@ -55,32 +56,7 @@ class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
                     # random sampling is done during mini-batch creation
                     # this should be equivalent to sampling the correct number of
                     # samples here, then we have no selection during mini-batch creation
-                    p=2800,  # TODO: tune per dataset to ensure unique samples
-                ),
-                RepresentationPlugin(),
-            ],
-        )
-
-
-class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=RandomWeightedSamplingStrategy,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    q=Q,
-                    p=2800,  # TODO: tune per dataset to ensure unique samples
+                    p=1429,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
@@ -106,7 +82,59 @@ class GeometricAwareSamplingStrategyWeightedSampling(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=2800,  # TODO: tune per dataset to ensure unique samples
+                    p=1429,  # TODO: tune per dataset to ensure unique samples
+                ),
+                RepresentationPlugin(),
+            ],
+        )
+
+
+class GeometricAwareSamplingStrategyWeightedSamplingExp(BaseExperimentStrategy):
+    """
+
+    Implements the Geometric Aware Sampling continual learning strategy
+    as described in our paper with weighted sampling according to the distance of
+    means.
+
+    """
+
+    def create_cl_strategy(self):
+
+        return SupervisedTemplate(
+            **self.default_settings,
+            plugins=[
+                GeometricPlugin(
+                    sampling_strategy=DistanceWeightedSamplingStrategyExp,
+                    replay_ratio=REPLAY_RATIO,
+                    mem_size=MAX_MEMORY_SIZE,
+                    q=Q,
+                    p=1429,  # TODO: tune per dataset to ensure unique samples
+                ),
+                RepresentationPlugin(),
+            ],
+        )
+
+
+class GeometricAwareSamplingStrategyScattering(BaseExperimentStrategy):
+    """
+
+    Implements the Geometric Aware Sampling continual learning strategy
+    as described in our paper with weighted sampling according to the distance of
+    means.
+
+    """
+
+    def create_cl_strategy(self):
+
+        return SupervisedTemplate(
+            **self.default_settings,
+            plugins=[
+                GeometricPlugin(
+                    sampling_strategy=DistanceWeightedScattering,
+                    replay_ratio=REPLAY_RATIO,
+                    mem_size=MAX_MEMORY_SIZE,
+                    q=Q,
+                    p=1429,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
