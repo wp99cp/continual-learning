@@ -6,7 +6,6 @@ import torch
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
-
 from torch.utils.data import DataLoader
 
 from geometric_aware_sampling.models.SlimResNet18 import ResNet
@@ -111,6 +110,31 @@ class RandomWeightedSamplingStrategy(BufferSamplingStrategy):
         return buffer.subset(indices)
 
 
+def get_representation(model: torch.nn.Module, dataset):
+    batch_size = 2048
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, pin_memory=False)
+    representations = []  # representation of the dataset (stored on CPU)
+
+    # set model to eval mode
+    model_mode = model.training
+    model.eval()
+
+    # run inference on the GPU
+    for batch_data in loader:
+        # dim 0 is the data dimension, dim 1 is the target dimension, ...
+        gpu_batch = batch_data[0].to("cuda")
+        batch_representations = model.extract_last_layer(gpu_batch)
+        representations.append(batch_representations.detach().cpu())
+
+        # Explicitly delete GPU tensors
+        del gpu_batch, batch_representations
+        torch.cuda.empty_cache()
+
+    # set model back to its original mode
+    model.train(model_mode)
+    return torch.cat(representations, dim=0)
+
+
 class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
     """
     Strategy, that samples based on the inverted square distance of the prototypes
@@ -129,8 +153,14 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
         current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
 
+        buffer = self.complete_buffer
+        print(f"sampling {replay_size} from a buffer with {len(buffer)} samples.")
+
         if not isinstance(current_model, ResNet):
             raise Exception("Cannot sample without access to the last layer.")
+
+        time_before = torch.cuda.Event(enable_timing=True)
+        time_before.record()
 
         if _num_exps > self.num_exp:
             self.before_experience(current_model, current_exp_dataset)
@@ -147,7 +177,15 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
                 for c, b in self.balanced_buffer.buffer_groups.items()
             ]
         )
+
+        time_after = torch.cuda.Event(enable_timing=True)
+        time_after.record()
+        torch.cuda.synchronize()
+        print(f"Time to sample {time_before.elapsed_time(time_after):.2f} ms")
         print("Size of concat dataset is " + str(len(concatenated)))
+
+        # empty cuda cache
+        torch.cuda.empty_cache()
         return concatenated
 
     def before_experience(
@@ -161,26 +199,15 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
         inv_distances = dict()
 
         for c, b in self.balanced_buffer.buffer_groups.items():
-            # computing mean for class c
-            loader = DataLoader(b.buffer, batch_size=len(b.buffer), shuffle=False)
-            # Complicated way of getting the data out
-            for all_data in loader:
-                pass
-            representations = current_model.extract_last_layer(all_data[0])
+            representations = get_representation(current_model, b.buffer)
             means[c] = representations.mean(dim=0)
             inv_distances[c] = 0
 
-        print("Means for learned classes calculated")
-
         for c, ids in current_exp_dataset.targets.val_to_idx.items():
             curr_dataset = current_exp_dataset.subset(ids)
-            loader = DataLoader(
-                curr_dataset, batch_size=len(curr_dataset), shuffle=False
-            )
-            # Complicated way of getting the data out
-            for all_data in loader:
-                pass
-            current_exp_mean = current_model.extract_last_layer(all_data[0]).mean(dim=0)
+            representations = get_representation(current_model, curr_dataset)
+            current_exp_mean = representations.mean(dim=0)
+
             # compute norm
             w_c = dict()
             for c_old, mean_old in means.items():
@@ -193,4 +220,4 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
             # sum(inv_distances.values()) == n_classes
             self.ratios[c] = inv_dist / sum(inv_distances.values())
 
-        print("Ratios are" + str(self.ratios.values()))
+        print("Ratios are " + str(self.ratios.values()), end="\n\n")
