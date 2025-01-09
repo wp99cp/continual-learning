@@ -211,6 +211,29 @@ def print_results(overall_results, writer: SummaryWriter):
         ]
         ax.legend(handles=legend_labels, loc="upper right")
 
+        boolean_map = np.array(correctly_classified)
+
+        # calculated the ratio of correctly classified samples per task
+        # that is for every 1/5 of the width of the boolean_map
+
+        print(f"\n\n{__strategy_name}")
+        for i in range(5):
+            area = boolean_map[:, i * last_train_idx : (i + 1) * last_train_idx]
+            ratio = np.sum(area) / area.size
+            print(f" - Task {i} correctly classified samples ratio: {ratio:.2f}")
+
+            # split the area into four quarters and calculate the ratio for each quarter
+            for j in range(4):
+                quarter = area[
+                    :, j * last_train_idx // 4 : (j + 1) * last_train_idx // 4
+                ]
+                quarter_ratio = np.sum(quarter) / quarter.size
+                print(
+                    f"   - Task {i} quarter {j} correctly classified samples ratio: {quarter_ratio:.2f}"
+                )
+
+        print("\n\n")
+
         # save the plot to tensorboard
         writer.add_figure(
             f"{__strategy_name}/correctly_classified_samples", fig, global_step=0
