@@ -55,7 +55,7 @@ class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
                     # random sampling is done during mini-batch creation
                     # this should be equivalent to sampling the correct number of
                     # samples here, then we have no selection during mini-batch creation
-                    p=555,  # TODO: tune per dataset to ensure unique samples
+                    p=2800,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
@@ -80,7 +80,7 @@ class GeometricAwareSamplingStrategy(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=555,  # TODO: tune per dataset to ensure unique samples
+                    p=2800,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
@@ -106,7 +106,7 @@ class GeometricAwareSamplingStrategyWeightedSampling(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=555,  # TODO: tune per dataset to ensure unique samples
+                    p=2800,  # TODO: tune per dataset to ensure unique samples
                 ),
                 RepresentationPlugin(),
             ],
