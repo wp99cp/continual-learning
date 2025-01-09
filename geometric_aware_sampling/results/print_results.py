@@ -76,6 +76,8 @@ def print_results(overall_results, writer: SummaryWriter):
         for i in range(1, 5):
             ax.axvline(x=i, color="k", linestyle="--", alpha=0.25)
 
+        ax.set_ylim(0.1, 1.0)
+
         # save the plot to tensorboard
         writer.add_figure(
             f"{__strategy_name}/class_accuracy_history", fig, global_step=0
@@ -145,7 +147,7 @@ def print_results(overall_results, writer: SummaryWriter):
         for i in range(1, 5):
             ax.axvline(x=i, color="k", linestyle="--", alpha=0.25)
 
-        # show the plot
+        ax.set_ylim(0.0, 1.0)
 
         # save the plot to tensorboard
         writer.add_figure(f"{__strategy_name}/forgetting", fig, global_step=0)
