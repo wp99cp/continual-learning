@@ -24,6 +24,10 @@ def main():
     # Experiment Settings and (global) Hyperparameters
     ###################################
 
+    # if enabled we randomize the class-task mapping for every repetition
+    # this is useful to get a more stable estimate of the performance
+    randomize_class_task_mapping = False
+
     settings = {
         "args": args,
         "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
@@ -75,7 +79,9 @@ def main():
     ###################################
 
     if args.res_path is None:  # skip experiments if res_path is given
-        overall_results = run_experiments(experiments, repetitions, settings)
+        overall_results = run_experiments(
+            experiments, repetitions, settings, randomize_class_task_mapping
+        )
 
     ###################################
     # Save Results to File
