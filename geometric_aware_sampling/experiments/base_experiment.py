@@ -5,8 +5,8 @@ from abc import abstractmethod
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
 from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim import SGD
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
@@ -117,15 +117,13 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             cl_dataset=self.cl_dataset,
         )
 
-        self.optimizer = Adam(
-            self.model.parameters(), betas=(0.9, 0.999), lr=0.001, weight_decay=1e-4
+        self.optimizer = SGD(
+            self.model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005
         )
 
         # learning rate scheduler (could also be ReduceLROnPlateau or
         # any other scheduler from torch.optim.lr_scheduler)
-        self.scheduler = ReduceLROnPlateau(
-            self.optimizer, mode="min", factor=0.25, patience=1, cooldown=5
-        )
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=self.train_epochs)
 
         self.criterion = CrossEntropyLoss()
 
@@ -142,7 +140,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         lr_scheduler_plugin = LoggedLRSchedulerPlugin(
             scheduler=self.scheduler,
             # the following argument is only used for the ReduceLROnPlateau scheduler
-            metric="train_loss",  # we should not use validation loss as this leaks information
+            # not used for CosineAnnealingLR
+            # metric="train_loss",  # we should not use validation loss as this leaks information
         )
         self.cl_strategy.plugins.append(lr_scheduler_plugin)
 
