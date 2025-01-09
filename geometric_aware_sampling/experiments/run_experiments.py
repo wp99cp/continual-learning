@@ -1,3 +1,9 @@
+import datetime
+
+from geometric_aware_sampling.utils.file_handler import save_results_to_pkl
+from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
+
+
 def run_experiments(
     experiments, repetitions, settings, randomize_class_task_mapping: bool
 ):
@@ -36,5 +42,9 @@ def run_experiments(
             # continue with other experiments if one fails
             except Exception as e:
                 print(f"Error in experiment {exp_name}: {e}")
+
+        now = datetime.datetime.now()
+        path = f"{TENSORBOARD_DIR}/{now.strftime("%Y-%m-%d_%H-%M")}_results_rep-{rep}"
+        save_results_to_pkl(overall_results, path)
 
     return overall_results
