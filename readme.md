@@ -2,7 +2,7 @@
 
 ## Reproduce the Experiments
 
-To reproduce the results you need a GPU with at least 12GB of memory.
+To reproduce the results you need a GPU with at least 16GB of memory.
 
 1) Clone the repository
 2) Install the requirements
