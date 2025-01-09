@@ -221,3 +221,8 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
             self.ratios[c] = inv_dist / sum(inv_distances.values())
 
         print("Ratios are " + str(self.ratios.values()), end="\n\n")
+        print(f" » Ratios sum up to {sum(self.ratios.values())}")
+        print(
+            f" » Ratios {np.mean(list(self.ratios.values()))} +- {np.std(list(self.ratios.values()))}"
+        )
+        print(f" » min/max {min(self.ratios.values())} / {max(self.ratios.values())}")
