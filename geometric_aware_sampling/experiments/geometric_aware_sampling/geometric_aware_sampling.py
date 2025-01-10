@@ -97,6 +97,32 @@ class GeometricAwareSamplingStrategy_Baseline_1(BaseExperimentStrategy):
         )
 
 
+class GeometricAwareSamplingStrategyWeightedSamplingICarl(BaseExperimentStrategy):
+    """
+
+    Implements the Geometric Aware Sampling continual learning strategy
+    as described in our paper with weighted sampling according to the distance of
+    means.
+
+    """
+
+    def create_cl_strategy(self):
+        return SupervisedTemplate(
+            **self.default_settings,
+            plugins=[
+                GeometricPlugin(
+                    sampling_strategy=DistanceWeightedSamplingStrategy,
+                    replay_ratio=REPLAY_RATIO,
+                    mem_size=MAX_MEMORY_SIZE,
+                    q=Q,
+                    p=1424,  # TODO: tune per dataset to ensure unique samples
+                    storage_policy="ICarl",
+                ),
+                # RepresentationPlugin(),
+            ],
+        )
+
+
 class GeometricAwareSamplingStrategyWeightedSampling(BaseExperimentStrategy):
     """
 

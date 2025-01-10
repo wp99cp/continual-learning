@@ -9,6 +9,7 @@ from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_awa
     GeometricAwareSamplingStrategyWeightedSampling,
     GeometricAwareSamplingStrategyScattering,
     GeometricAwareSamplingStrategyNearestNeighbor,
+    GeometricAwareSamplingStrategyWeightedSamplingICarl,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -38,7 +39,7 @@ def main():
         "n_experiences": 5,
         "stop_after_n_experiences": 3,  # only trains the first n_experiences resp. tasks then stops
         "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 100,
+        "train_epochs": 1,
     }
 
     # define the number of repetitions for each experiment
@@ -70,6 +71,7 @@ def main():
         # all the following baselines use the same buffer
         # size and batch size throughout the experiments
         ###################################
+        GeometricAwareSamplingStrategyWeightedSamplingICarl,
         GeometricAwareSamplingStrategy_Baseline_1,
         GeometricAwareSamplingStrategy_Baseline_WithoutGoldilock,
         GeometricAwareSamplingStrategy_KL,
