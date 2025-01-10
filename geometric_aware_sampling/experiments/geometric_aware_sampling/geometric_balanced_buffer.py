@@ -4,7 +4,6 @@ import torch
 from avalanche.benchmarks.utils.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
-from matplotlib import pyplot as plt
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     RandomSamplingStrategy,
@@ -175,13 +174,13 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
 
         # create a histogram plot of the learning speed using matplotlib
         # and mark the bounds as vertical lines
-        fig, ax = plt.subplots()
-        ax.hist(learning_speed, bins=20)
-        ax.axvline(lower_bound, color="r", linestyle="--")
-        ax.axvline(upper_bound, color="r", linestyle="--")
+        # fig, ax = plt.subplots()
+        # ax.hist(learning_speed, bins=20)
+        # ax.axvline(lower_bound, color="r", linestyle="--")
+        # ax.axvline(upper_bound, color="r", linestyle="--")
 
         # save figure to tensorboard
-        fig.show()
+        # fig.show()
 
         # weights of samples in mask to 0 -> not included in the buffer
         weights[mask] = 0

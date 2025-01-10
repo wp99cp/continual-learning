@@ -196,6 +196,10 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
                 f"\n - Experience {i} / {self.cl_dataset.n_experiences} with classes {experience.classes_in_this_experience}"
             )
 
+            if i > 1:
+                # set the learning rate
+                self.optimizer.param_groups[0]["lr"] = 0.065
+
             self.cl_strategy.train(
                 experience,
                 eval_streams=[self.cl_dataset.test_stream[:i]],

@@ -69,7 +69,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         replay_ratio: float = 0.25,
         mem_size: int = 200,
         task_balanced_dataloader: bool = False,
-        upper_quantile: float = 1 - 0.44,  # chosen according to the paper, figure 4 (b)
+        upper_quantile: float = 1 - 0.36,  # chosen according to the paper, figure 4 (b)
         lower_quantile: float = 0.12,  # chosen according to the paper, figure 4 (b)
         q: float = 0.4,
         p: float = 1.0,
@@ -167,7 +167,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
             task_balanced_dataloader=self.task_balanced_dataloader,
             num_workers=num_workers,
             shuffle=shuffle,
-            drop_last=drop_last,
+            drop_last=True,
             **other_dataloader_args,
         )
 
