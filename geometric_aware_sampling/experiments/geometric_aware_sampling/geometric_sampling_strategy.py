@@ -1,4 +1,4 @@
-import random
+import math
 from abc import ABC
 
 import numpy as np
@@ -6,6 +6,7 @@ import torch
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
+from torch.masked import softmax, log_softmax
 from torch.utils.data import DataLoader
 
 from geometric_aware_sampling.models.SlimResNet18 import ResNet
@@ -15,6 +16,17 @@ class BufferSamplingStrategy(ABC):
 
     def __init__(self, balanced_buffer: BalancedExemplarsBuffer):
         self.balanced_buffer = balanced_buffer
+        self.num_exp = 0
+        self.ratios = dict()
+
+    def before_experience(
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+    ):
+        """
+        This method is called before a new experience is encountered.
+        It can be used to update the ratios based on the current model and dataset.
+        """
+        raise NotImplementedError
 
     def sample(
         self,
@@ -31,7 +43,58 @@ class BufferSamplingStrategy(ABC):
         :param current_exp_dataset: the current experience dataset.
         :return: A dataset with the sampled elements.
         """
-        raise Exception("Not implemented")
+        buffer = self.complete_buffer
+        print(f"sampling {replay_size} from a buffer with {len(buffer)} samples.")
+
+        if not isinstance(current_model, ResNet):
+            raise Exception("Cannot sample without access to the last layer.")
+
+        time_before = torch.cuda.Event(enable_timing=True)
+        time_before.record()
+
+        if _num_exps > self.num_exp:
+            self.before_experience(current_model, current_exp_dataset)
+
+        print("\nRatios are " + str(self.ratios.values()), end="\n\n")
+        print(f" » Ratios sum up to {sum(self.ratios.values())}")
+        print(
+            f" » Ratios {np.mean(list(self.ratios.values()))} +- {np.std(list(self.ratios.values()))}"
+        )
+        print(
+            f" » min/max {min(self.ratios.values())} / {max(self.ratios.values())}",
+            end="\n\n",
+        )
+
+        print(
+            f" » This we sample {[
+            int(replay_size * r) for r in self.ratios.values()
+        ]} samples per class for classes {list(self.ratios.keys())} with replace {
+        [len(buffer) < int(replay_size * r) for r in self.ratios.values()]
+        }"
+        )
+
+        concatenated = concat_datasets(
+            [
+                b.buffer.subset(
+                    np.random.choice(
+                        len(b.buffer),
+                        size=int(replay_size * self.ratios[c]),
+                        replace=len(b.buffer) < int(replay_size * self.ratios[c]),
+                    )
+                )
+                for c, b in self.balanced_buffer.buffer_groups.items()
+            ]
+        )
+
+        time_after = torch.cuda.Event(enable_timing=True)
+        time_after.record()
+        torch.cuda.synchronize()
+        print(f"Time to sample {time_before.elapsed_time(time_after):.2f} ms")
+        print("Size of concat dataset is " + str(len(concatenated)))
+
+        # empty cuda cache
+        torch.cuda.empty_cache()
+        return concatenated
 
     @property
     def complete_buffer(self):
@@ -60,19 +123,14 @@ class RandomSamplingStrategy(BufferSamplingStrategy):
         current_model: torch.nn.Module | None = None,
         current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
-        datasets = []
 
-        # Sample evenly from all groups
-        lens = self.balanced_buffer.get_group_lengths(replay_size, _num_exps)
-
-        for ll, b in zip(lens, self.balanced_buffer.buffer_groups.values()):
-            buf = b.buffer
-            l = min(ll, len(buf))
-            # Sample l random indices without replacement
-            indices = random.sample(range(len(buf)), k=l)
-            datasets.append(buf.subset(indices))
-
-        return concat_datasets(datasets)
+        buffer = self.complete_buffer
+        idxs = np.random.choice(
+            len(buffer),
+            size=int(replay_size),
+            replace=len(buffer) < int(replay_size),
+        )
+        return buffer.subset(idxs)
 
 
 def get_representation(model: torch.nn.Module, dataset):
@@ -104,54 +162,6 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
     """
     Strategy, that samples based on the inverted square distance of the prototypes
     """
-
-    def __init__(self, balanced_buffer: BalancedExemplarsBuffer):
-        super().__init__(balanced_buffer)
-        self.num_exp = 0
-        self.ratios = dict()
-
-    def sample(
-        self,
-        replay_size: int,
-        _num_exps: int,
-        current_model: torch.nn.Module | None = None,
-        current_exp_dataset: AvalancheDataset = None,
-    ) -> AvalancheDataset:
-
-        buffer = self.complete_buffer
-        print(f"sampling {replay_size} from a buffer with {len(buffer)} samples.")
-
-        if not isinstance(current_model, ResNet):
-            raise Exception("Cannot sample without access to the last layer.")
-
-        time_before = torch.cuda.Event(enable_timing=True)
-        time_before.record()
-
-        if _num_exps > self.num_exp:
-            self.before_experience(current_model, current_exp_dataset)
-
-        concatenated = concat_datasets(
-            [
-                b.buffer.subset(
-                    np.random.choice(
-                        len(b.buffer),
-                        size=int(replay_size * self.ratios[c]),
-                        replace=len(b.buffer) < int(replay_size * self.ratios[c]),
-                    )
-                )
-                for c, b in self.balanced_buffer.buffer_groups.items()
-            ]
-        )
-
-        time_after = torch.cuda.Event(enable_timing=True)
-        time_after.record()
-        torch.cuda.synchronize()
-        print(f"Time to sample {time_before.elapsed_time(time_after):.2f} ms")
-        print("Size of concat dataset is " + str(len(concatenated)))
-
-        # empty cuda cache
-        torch.cuda.empty_cache()
-        return concatenated
 
     def before_experience(
         self, current_model: ResNet, current_exp_dataset: AvalancheDataset
@@ -185,66 +195,53 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
             # sum(inv_distances.values()) == n_classes
             self.ratios[c] = inv_dist / sum(inv_distances.values())
 
-        print("Ratios are " + str(self.ratios.values()), end="\n\n")
-        print(f" » Ratios sum up to {sum(self.ratios.values())}")
-        print(
-            f" » Ratios {np.mean(list(self.ratios.values()))} +- {np.std(list(self.ratios.values()))}"
-        )
-        print(f" » min/max {min(self.ratios.values())} / {max(self.ratios.values())}")
+
+class DistanceWeightedSamplingStrategy_KL(BufferSamplingStrategy):
+
+    def before_experience(
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+    ):
+        """
+        Computes representation means of all classes. From them, it calculates
+        the ratio based on the inverse of the distance.
+        """
+        distances = dict()
+        representations_old = dict()
+        self.ratios = dict()
+
+        for c, b in self.balanced_buffer.buffer_groups.items():
+            # fill with zeros
+            distances[c] = 0
+            representations_old[c] = get_representation(current_model, b.buffer)
+
+        for c, ids in current_exp_dataset.targets.val_to_idx.items():
+            curr_dataset = current_exp_dataset.subset(ids)
+            representations = get_representation(current_model, curr_dataset)
+
+            # compute norm
+            kl_div_loss = torch.nn.KLDivLoss(reduction="mean")
+            for c_old, old_rep in representations_old.items():
+                distances[c_old] += math.exp(
+                    -kl_div_loss(
+                        log_softmax(old_rep, dim=0),
+                        softmax(representations, dim=0),
+                    ).item()
+                )
+
+        # boost the rations with exp(-distances)
+        for c, dist in distances.items():
+            self.ratios[c] = dist
+
+        # normalize
+        normalization_factor = sum(self.ratios.values())
+        for c, dist in distances.items():
+            self.ratios[c] = self.ratios[c] / normalization_factor
 
 
 class DistanceWeightedSamplingStrategyExp(BufferSamplingStrategy):
     """
     Strategy, that samples based on the inverted square distance of the prototypes
     """
-
-    def __init__(self, balanced_buffer: BalancedExemplarsBuffer):
-        super().__init__(balanced_buffer)
-        self.num_exp = 0
-        self.ratios = dict()
-
-    def sample(
-        self,
-        replay_size: int,
-        _num_exps: int,
-        current_model: torch.nn.Module | None = None,
-        current_exp_dataset: AvalancheDataset = None,
-    ) -> AvalancheDataset:
-
-        buffer = self.complete_buffer
-        print(f"sampling {replay_size} from a buffer with {len(buffer)} samples.")
-
-        if not isinstance(current_model, ResNet):
-            raise Exception("Cannot sample without access to the last layer.")
-
-        time_before = torch.cuda.Event(enable_timing=True)
-        time_before.record()
-
-        if _num_exps > self.num_exp:
-            self.before_experience(current_model, current_exp_dataset)
-
-        concatenated = concat_datasets(
-            [
-                b.buffer.subset(
-                    np.random.choice(
-                        len(b.buffer),
-                        size=int(replay_size * self.ratios[c]),
-                        replace=len(b.buffer) < int(replay_size * self.ratios[c]),
-                    )
-                )
-                for c, b in self.balanced_buffer.buffer_groups.items()
-            ]
-        )
-
-        time_after = torch.cuda.Event(enable_timing=True)
-        time_after.record()
-        torch.cuda.synchronize()
-        print(f"Time to sample {time_before.elapsed_time(time_after):.2f} ms")
-        print("Size of concat dataset is " + str(len(concatenated)))
-
-        # empty cuda cache
-        torch.cuda.empty_cache()
-        return concatenated
 
     def before_experience(
         self, current_model: ResNet, current_exp_dataset: AvalancheDataset
@@ -279,66 +276,11 @@ class DistanceWeightedSamplingStrategyExp(BufferSamplingStrategy):
             # sum(inv_distances.values()) == n_classes
             self.ratios[c] = inv_dist / sum(inv_distances.values())
 
-        print("Ratios are " + str(self.ratios.values()), end="\n\n")
-        print(f" » Ratios sum up to {sum(self.ratios.values())}")
-        print(
-            f" » Ratios {np.mean(list(self.ratios.values()))} +- {np.std(list(self.ratios.values()))}"
-        )
-        print(f" » min/max {min(self.ratios.values())} / {max(self.ratios.values())}")
-
 
 class DistanceWeightedScattering(BufferSamplingStrategy):
     """
     Strategy, that samples based on the inverted square distance of the prototypes
     """
-
-    def __init__(self, balanced_buffer: BalancedExemplarsBuffer):
-        super().__init__(balanced_buffer)
-        self.num_exp = 0
-        self.ratios = dict()
-
-    def sample(
-        self,
-        replay_size: int,
-        _num_exps: int,
-        current_model: torch.nn.Module | None = None,
-        current_exp_dataset: AvalancheDataset = None,
-    ) -> AvalancheDataset:
-
-        buffer = self.complete_buffer
-        print(f"sampling {replay_size} from a buffer with {len(buffer)} samples.")
-
-        if not isinstance(current_model, ResNet):
-            raise Exception("Cannot sample without access to the last layer.")
-
-        time_before = torch.cuda.Event(enable_timing=True)
-        time_before.record()
-
-        if _num_exps > self.num_exp:
-            self.before_experience(current_model, current_exp_dataset)
-
-        concatenated = concat_datasets(
-            [
-                b.buffer.subset(
-                    np.random.choice(
-                        len(b.buffer),
-                        size=int(replay_size * self.ratios[c]),
-                        replace=len(b.buffer) < int(replay_size * self.ratios[c]),
-                    )
-                )
-                for c, b in self.balanced_buffer.buffer_groups.items()
-            ]
-        )
-
-        time_after = torch.cuda.Event(enable_timing=True)
-        time_after.record()
-        torch.cuda.synchronize()
-        print(f"Time to sample {time_before.elapsed_time(time_after):.2f} ms")
-        print("Size of concat dataset is " + str(len(concatenated)))
-
-        # empty cuda cache
-        torch.cuda.empty_cache()
-        return concatenated
 
     def before_experience(
         self, current_model: ResNet, current_exp_dataset: AvalancheDataset
@@ -357,9 +299,27 @@ class DistanceWeightedScattering(BufferSamplingStrategy):
         for c in self.ratios.keys():
             self.ratios[c] = self.ratios[c] / s
 
-        print("Ratios are " + str(self.ratios.values()), end="\n\n")
-        print(f" » Ratios sum up to {sum(self.ratios.values())}")
-        print(
-            f" » Ratios {np.mean(list(self.ratios.values()))} +- {np.std(list(self.ratios.values()))}"
-        )
-        print(f" » min/max {min(self.ratios.values())} / {max(self.ratios.values())}")
+
+class NearestNeighborSamplingStrategy(BufferSamplingStrategy):
+
+    def sample(
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+        current_exp_dataset: AvalancheDataset = None,
+    ) -> AvalancheDataset:
+
+        buffer = self.complete_buffer
+
+        if not isinstance(current_model, ResNet):
+            raise Exception("Cannot sample without access to the last layer.")
+
+        representations_buffer = get_representation(current_model, buffer)
+        representation_new = get_representation(current_model, current_exp_dataset)
+
+        # compute distances
+        distances = torch.cdist(representation_new, representations_buffer)
+
+        idxs = distances.argsort(dim=1)[:, :replay_size]
+        return buffer.subset(idxs.flatten())

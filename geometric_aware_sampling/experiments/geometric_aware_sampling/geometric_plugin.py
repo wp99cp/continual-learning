@@ -118,7 +118,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         num_workers: int = 0,
         shuffle: bool = True,
         drop_last: bool = False,
-        **kwargs
+        **kwargs,
     ):
 
         # save buffer as local var to only call it once
@@ -158,17 +158,56 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
                     "persistent_workers"
                 ]
 
-        strategy.dataloader = ReplayDataLoader(
+        dataset = ReplayDataLoader(
             strategy.adapted_dataset,
             buffer,
-            oversample_small_tasks=True,
+            oversample_small_tasks=False,
             batch_size=batch_size,
             batch_size_mem=batch_size_mem,
             task_balanced_dataloader=self.task_balanced_dataloader,
             num_workers=num_workers,
             shuffle=shuffle,
             drop_last=drop_last,
-            **other_dataloader_args
+            **other_dataloader_args,
+        )
+
+        self.__print_statistics(strategy, buffer, dataset, global_batch_size)
+
+        strategy.dataloader = dataset
+
+    def __print_statistics(self, strategy, buffer, dataset, global_batch_size):
+        print(
+            f"{len(strategy.adapted_dataset)} new samples for task {self.task_idx} loaded."
+        )
+
+        replay_buffer_set = set()
+        buffer_pool = self.storage_policy.replay_sampler.complete_buffer
+        for x in buffer_pool:
+            replay_buffer_set.add(x[3])
+        print(f" » buffer pool contains {len(buffer_pool)} samples")
+        print(
+            f"   with {len(replay_buffer_set)} unique samples ({100 *(len(replay_buffer_set) / len(buffer_pool)):.2f}%)"
+        )
+
+        replay_set = set()
+        # iterate over buffer
+        for x in buffer:
+            replay_set.add(x[3])  # unique sample id
+        print(f" » {len(buffer)} samples selected for replay out of the buffer pool")
+        print(
+            f"   with {len(replay_set)} unique samples ({100 *(len(replay_set) / len(buffer)):.2f}%)"
+        )
+
+        full_set = set()
+
+        for batch in dataset:
+            for task, x in zip(batch[2], batch[3]):
+                full_set.add(f"{x}__{task}")
+        print(
+            f" » {len(dataset) * global_batch_size} samples form the training set for task {self.task_idx}"
+        )
+        print(
+            f"   with {len(full_set)} unique samples ({100 *(len(full_set) / (len(dataset) * global_batch_size)):.2f}%)"
         )
 
     def before_training_epoch(self, strategy: "SupervisedTemplate", **kwargs):

@@ -4,6 +4,7 @@ import torch
 from avalanche.benchmarks.utils.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
+from matplotlib import pyplot as plt
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     RandomSamplingStrategy,
@@ -158,12 +159,32 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         weights = torch.rand(len(new_data))
 
         # create a mask, which masks the top and bottom of the learning speed
-        mask = (learning_speed > learning_speed.quantile(self.lower_quantile_ls)) & (
-            learning_speed < learning_speed.quantile(self.upper_quantile_ls)
+        print(
+            f"Masking learning speed between {self.lower_quantile_ls} and {self.upper_quantile_ls}"
         )
-        weights[mask] = (
-            0  # weights of samples in mask to 0 -> not included in the buffer
+
+        lower_bound = learning_speed.quantile(self.lower_quantile_ls)
+        upper_bound = learning_speed.quantile(self.upper_quantile_ls)
+
+        print(
+            f" » thus we take learning_speed in [{lower_bound}, {upper_bound}] (including the boundaries)"
         )
+        # the equal is necessary for sampling everything
+        mask = (learning_speed <= lower_bound) | (learning_speed >= upper_bound)
+        print(f" » {mask.sum()} samples masked")
+
+        # create a histogram plot of the learning speed using matplotlib
+        # and mark the bounds as vertical lines
+        fig, ax = plt.subplots()
+        ax.hist(learning_speed, bins=20)
+        ax.axvline(lower_bound, color="r", linestyle="--")
+        ax.axvline(upper_bound, color="r", linestyle="--")
+
+        # save figure to tensorboard
+        fig.show()
+
+        # weights of samples in mask to 0 -> not included in the buffer
+        weights[mask] = 0
 
         for i, l in enumerate(unique_labels):
             # Initialize buffer for new samples with a certain size
