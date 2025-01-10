@@ -355,62 +355,54 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
 
         # representations, raw_data = self.get_representation(strategy.model, new_data)
 
-        try:
-            # create new buffers
-            for i, l in enumerate(unique_labels):
-                ids = torch.nonzero(lbls_tensor == l)
-                curr_dataset = new_data.subset(ids)
-                representations, curr_data = self.get_representation(
-                    strategy.model, curr_dataset
-                )
+        # create new buffers
+        for j, l in enumerate(unique_labels):
+            ids = torch.nonzero(lbls_tensor == l)
+            curr_dataset = new_data.subset(ids)
+            representations, curr_data = self.get_representation(
+                strategy.model, curr_dataset
+            )
 
-                # Initialize buffer for new samples with a certain size
-                idx = self._num_classes - len(unique_labels) + i
+            # Initialize buffer for new samples with a certain size
+            idx = self._num_classes - len(unique_labels) + j
 
-                # Number of new exemplars
-                m = lens[idx]
+            # Number of new exemplars
+            m = lens[idx]
 
-                new_buffer = WeightedSamplingBuffer(m)
+            new_buffer = WeightedSamplingBuffer(m)
 
-                new_data_size_l = curr_data.shape[0]
+            new_data_size_l = curr_data.shape[0]
 
-                mean = representations.mean(dim=0)
+            mean = representations.mean(dim=0)
 
-                phi_sum = torch.zeros(representations.shape[1:])
+            phi_sum = torch.zeros(representations.shape[1:])
 
-                P = []
+            P = []
 
-                for i in range(m):
-                    min_id = torch.argmin(
-                        torch.norm(
-                            mean.unsqueeze(0).expand(new_data_size_l, *mean.shape)
-                            - (
-                                phi_sum.unsqueeze(0).expand(
-                                    new_data_size_l, *phi_sum.shape
-                                )
-                                + representations
-                            )
-                            / i,
-                            dim=-1,
-                        ),
-                        dim=0,
-                    ).item()
-                    # print("Minimal id is " + str(min_id))
-                    phi_sum += representations[min_id]
-                    P.append([curr_data[min_id]])
+            for i in range(m):
+                min_id = torch.argmin(
+                    torch.norm(
+                        mean.unsqueeze(0).expand(new_data_size_l, *mean.shape)
+                        - (
+                            phi_sum.unsqueeze(0).expand(new_data_size_l, *phi_sum.shape)
+                            + representations
+                        )
+                        / (i + 1),
+                        dim=-1,
+                    ),
+                    dim=0,
+                ).item()
+                # print("Minimal id is " + str(min_id))
+                phi_sum += representations[min_id]
+                P.append(curr_data[min_id].unsqueeze(0))
 
-                weights = torch.linspace(1, 0, m)
+            weights = torch.linspace(1, 0, m)
 
-                new_buffer.update_from_dataset(
-                    AvalancheDataset(P), weights=weights
-                )  # TODO weigths by id
-                # Index buffers by classes
-                self.buffer_groups[l] = new_buffer
-
-        except Exception as e:
-            print(e)
-            traceback.print_exception(e)
-            traceback.print_exception(e)
+            new_buffer.update_from_dataset(
+                AvalancheDataset(P), weights=weights
+            )  # TODO weigths by id
+            # Index buffers by classes
+            self.buffer_groups[l] = new_buffer
 
         # resize other buffers
         for ll, b in zip(lens, self.buffer_groups.values()):
