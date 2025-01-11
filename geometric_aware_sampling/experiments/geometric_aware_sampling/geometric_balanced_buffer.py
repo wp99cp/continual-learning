@@ -1,12 +1,15 @@
 from typing import Type
 
+import avalanche.training
 import torch
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
 from matplotlib import pyplot as plt
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
+
+avalanche.training.ICaRL
 
 import traceback
 
@@ -274,7 +277,7 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
     def get_buffer(
         self,
         current_model: torch.nn.Module | None,
-        experience_dataset: torch.utils.data.Dataset,
+        experience_dataset: AvalancheDataset,
     ):
 
         # nothing to replay from
@@ -312,7 +315,6 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
             dataset, batch_size=batch_size, shuffle=False, pin_memory=False
         )
         representations = []  # representation of the dataset (stored on CPU)
-        raw_data = []
 
         # set model to eval mode
         model_mode = model.training
@@ -324,7 +326,6 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
             gpu_batch = batch_data[0].to("cuda")
             batch_representations = model.extract_last_layer(gpu_batch)
             representations.append(batch_representations.detach().cpu())
-            raw_data.append(batch_data[0])
 
             # Explicitly delete GPU tensors
             del gpu_batch, batch_representations
@@ -332,7 +333,7 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
 
         # set model back to its original mode
         model.train(model_mode)
-        return torch.cat(representations, dim=0), torch.cat(raw_data, dim=0)
+        return torch.cat(representations, dim=0)
 
     def post_adapt(self, strategy: "SupervisedTemplate", exp):
 
@@ -353,15 +354,15 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
 
         lens = self.get_group_lengths(self.pool_size, self._num_classes)
 
+        weights = torch.rand(len(new_data))
+
         # representations, raw_data = self.get_representation(strategy.model, new_data)
 
         # create new buffers
         for j, l in enumerate(unique_labels):
             ids = torch.nonzero(lbls_tensor == l)
             curr_dataset = new_data.subset(ids)
-            representations, curr_data = self.get_representation(
-                strategy.model, curr_dataset
-            )
+            representations = self.get_representation(strategy.model, curr_dataset)
 
             # Initialize buffer for new samples with a certain size
             idx = self._num_classes - len(unique_labels) + j
@@ -371,15 +372,18 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
 
             new_buffer = WeightedSamplingBuffer(m)
 
-            new_data_size_l = curr_data.shape[0]
+            new_data_size_l = len(ids)
 
             mean = representations.mean(dim=0)
 
             phi_sum = torch.zeros(representations.shape[1:])
 
-            P = []
+            i, added, selected = 0, 0, []
+            weights_l = weights.clone()
+            weights_l[lbls_tensor != l] = 0
+            weights_short = torch.zeros(new_data_size_l)
 
-            for i in range(m):
+            while (not (added == m)) and (i < 20 * m):
                 min_id = torch.argmin(
                     torch.norm(
                         mean.unsqueeze(0).expand(new_data_size_l, *mean.shape)
@@ -392,15 +396,16 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
                     ),
                     dim=0,
                 ).item()
+                if min_id not in selected:
+                    weights_short[min_id] += m - added
+                    added += 1
+                    selected.append(min_id)
                 # print("Minimal id is " + str(min_id))
                 phi_sum += representations[min_id]
-                P.append(curr_data[min_id].unsqueeze(0))
+                i += 1
 
-            weights = torch.linspace(1, 0, m)
-
-            new_buffer.update_from_dataset(
-                AvalancheDataset(P), weights=weights
-            )  # TODO weigths by id
+            weights_l[lbls_tensor == l] = weights_short
+            new_buffer.update_from_dataset(new_data, weights=weights_l)
             # Index buffers by classes
             self.buffer_groups[l] = new_buffer
 
