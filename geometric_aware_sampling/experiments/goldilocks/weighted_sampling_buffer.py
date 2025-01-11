@@ -33,6 +33,11 @@ class WeightedSamplingBuffer(ExemplarsBuffer):
         """Update buffer."""
         self.update_from_dataset(exp.dataset)
 
+    def log_buffer_summary(self, kwargs, task_idx: int, buffer_name: str = "buffer"):
+        tensorboard_logger = kwargs["tensorboard_logger"].writer
+        tensorboard_logger.add_scalar(buffer_name + "size", len(self.buffer), task_idx)
+        tensorboard_logger.close()
+
     def update_from_dataset(self, new_data: AvalancheDataset, weights: Tensor = None):
         """Update the buffer using the given dataset.
 

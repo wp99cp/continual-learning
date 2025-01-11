@@ -101,4 +101,5 @@ def get_epoch_evolution_graph(
     cbar.set_ticks(z_values)
     cbar.set_ticklabels(z_labels)
 
+    ax.set_ylim(0.0, 1.0)
     return fig

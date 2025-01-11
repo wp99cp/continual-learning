@@ -2,6 +2,8 @@
 
 ## Reproduce the Experiments
 
+To reproduce the results you need a GPU with at least 16GB of memory.
+
 1) Clone the repository
 2) Install the requirements
    ```bash
@@ -19,6 +21,16 @@
     python main.py
     ```
 
+## Hyperparameters
+
+Inside `main.py` you find multiple parameters you can tweak to select which experiments get executed, what dataset is
+used. Essential hyperparameters such as `batch_size`, `number of tasks` etc. can also be tuned directly within
+`main.py`.
+
+Additional experiment specific hyperparameters can be found in the corresponding experiment classes. Essential
+hyperparameters that are shared across all experiments can be found on `experiments/base_experiment.py`, here
+the `lr`, optimizer, ... are defined and can be changed.
+
 ## Results
 
 The results are stored in the `tb_data` directory. You can visualize them using tensorboard.
@@ -27,11 +39,12 @@ The results are stored in the `tb_data` directory. You can visualize them using 
 tensorboard --logdir tb_data --port 6066
 ```
 
-Open tensorboard in your browser at `localhost:6066`
+Open tensorboard in your browser at `localhost:6066`. Now you should be able to see all the results and plots used in
+the paper.
 
-### Regenerate Result Figures
+### Regenerate Result Figures from Data
 
-All metrics returned are saved inside a pkl file. You can regenerate the figures using
+All metrics returned are saved inside a `.pkl` file. You can regenerate the figures using
 the following command:
 
 ```bash

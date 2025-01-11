@@ -4,10 +4,9 @@ from abc import abstractmethod
 
 import torch
 from avalanche.logging import TensorboardLogger, InteractiveLogger
-from avalanche.training.templates.problem_type import SupervisedProblem
 from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim import SGD
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from geometric_aware_sampling.dataset.data_loader import load_dataset
 from geometric_aware_sampling.evaluation.evaluation import get_evaluator
@@ -40,6 +39,9 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         model_name: str = "slim_resnet18",
         batch_size: int = 16,
         train_epochs: int = 5,
+        seed: int = 42,
+        n_experiences: int = 5,
+        stop_after_n_experiences: int = -1,
     ):
         """
         Initialize the experiment
@@ -47,6 +49,12 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         :param args: the command line arguments
         :param dataset_name: the name of the dataset, either "split_mnist" or "split_cifar100"
         :param model_name: the name of the model, currently only "slim_resnet18"
+        :param batch_size: the batch size
+        :param train_epochs: the number of training epochs
+        :param seed: the random seed
+        :param n_experiences: the number of experiences
+        :param stop_after_n_experiences: only train the first n_experiences, then stop
+             -1 means train all experiences
         """
 
         self.args = args
@@ -54,6 +62,9 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.model_name = model_name
         self.batch_size = batch_size
         self.train_epochs = train_epochs
+        self.seed = seed
+        self.n_experiences = n_experiences
+        self.stop_after_n_experiences = stop_after_n_experiences
 
         self.device = torch.device(
             f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu"
@@ -96,6 +107,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         self.cl_dataset = load_dataset(
             self.dataset_name,
             print_summary=True,  # print summary statistics of the dataset / experience
+            n_experiences=self.n_experiences,
+            seed=self.seed,
             tensorboard_logger=self.tensorboard_logger,
         )
 
@@ -104,15 +117,13 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
             cl_dataset=self.cl_dataset,
         )
 
-        self.optimizer = Adam(
-            self.model.parameters(), betas=(0.9, 0.999), lr=0.001, weight_decay=1e-4
+        self.optimizer = SGD(
+            self.model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005
         )
 
         # learning rate scheduler (could also be ReduceLROnPlateau or
         # any other scheduler from torch.optim.lr_scheduler)
-        self.scheduler = ReduceLROnPlateau(
-            self.optimizer, mode="min", factor=0.25, patience=1, cooldown=5
-        )
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=self.train_epochs)
 
         self.criterion = CrossEntropyLoss()
 
@@ -129,7 +140,8 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
         lr_scheduler_plugin = LoggedLRSchedulerPlugin(
             scheduler=self.scheduler,
             # the following argument is only used for the ReduceLROnPlateau scheduler
-            metric="train_loss",  # we should not use validation loss as this leaks information
+            # not used for CosineAnnealingLR
+            # metric="train_loss",  # we should not use validation loss as this leaks information
         )
         self.cl_strategy.plugins.append(lr_scheduler_plugin)
 
@@ -184,11 +196,21 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
                 f"\n - Experience {i} / {self.cl_dataset.n_experiences} with classes {experience.classes_in_this_experience}"
             )
 
+            if i > 1:
+                # set the learning rate
+                self.optimizer.param_groups[0]["lr"] = 0.065
+
             self.cl_strategy.train(
                 experience,
                 eval_streams=[self.cl_dataset.test_stream[:i]],
                 tensorboard_logger=self.tensorboard_logger,
             )
+
+            if i == self.stop_after_n_experiences:
+                print(
+                    f"Stop training after {self.stop_after_n_experiences} experiences!"
+                )
+                break
 
         print("\n\n####################\nExperiment finished\n####################\n\n")
 

@@ -43,11 +43,13 @@ def print_stream_summary(stream):
 def load_dataset(
     dataset_name: str,
     print_summary: bool = True,
+    n_experiences: int = 5,
+    seed: int = 42,
     tensorboard_logger: TensorboardLogger = None,
 ):
     shared_base_args = {
-        "n_experiences": 5,  # 5 incremental experiences
-        "seed": 42,  # fix the order of classes for reproducibility
+        "n_experiences": n_experiences,  # 5 incremental experiences
+        "seed": seed,  # fix the order of classes for reproducibility
         "return_task_id": True,  # add task labels
     }
 

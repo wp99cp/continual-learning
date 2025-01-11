@@ -57,7 +57,7 @@ class ClassificationTracker(Metric[Dict[str, bool]]):
 
             task_label = int(task_label.item())
             # TODO: use sample indexes instead of hash of the input
-            sample_id = str(hash(str(input.cpu().numpy())))
+            sample_id = str(hash(input.cpu().numpy().tobytes()))
             pred = int(torch.argmax(pred).item())
             true = int(true.item())
 

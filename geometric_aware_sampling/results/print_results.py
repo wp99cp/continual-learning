@@ -32,22 +32,39 @@ def print_results(overall_results, writer: SummaryWriter):
         # START: accuracy history plot (only for first task)
         ########################################################################################################
 
-        # TODO the following only consider the first run
-
         # class accuracy history plot (only for first task)
         class_acc_history = []
 
         for key in results[0].keys():
             if "Top1_Acc_Exp/eval_phase/test_stream" in key:
 
-                np_array = np.array(results[0][key][1])
+                np_array = np.zeros((len(results[0][key][1]), len(results)))
+                for rep in range(len(results)):
+                    np_array[:, rep] = np.array(results[rep][key][1])
+
                 class_acc_history.append(np_array)
 
         fig, ax = plt.subplots(figsize=(10, 4), dpi=300)
 
-        for i, class_acc in enumerate(class_acc_history):
-            xs = np.linspace(i, 5, len(class_acc))
-            ax.plot(xs, class_acc, label=f"Testset with classes of task {i}")
+        for i, values in enumerate(class_acc_history):
+            color = cm.get_cmap("viridis")(i / len(class_acc_history))
+
+            # Calculate mean and standard deviation
+            mean_values = np.mean(values, axis=1)
+            std_values = np.std(values, axis=1)
+
+            xs = np.linspace(i, 5, mean_values.shape[0])
+            ax.plot(
+                xs, mean_values, color=color, label=f"Testset with classes of task {i}"
+            )
+
+            ax.fill_between(
+                xs,
+                mean_values - std_values,
+                mean_values + std_values,
+                color=color,
+                alpha=0.3,
+            )
 
         ax.set(
             xlabel=f"Start Training of Task i",
@@ -58,6 +75,8 @@ def print_results(overall_results, writer: SummaryWriter):
 
         for i in range(1, 5):
             ax.axvline(x=i, color="k", linestyle="--", alpha=0.25)
+
+        ax.set_ylim(0.1, 1.0)
 
         # save the plot to tensorboard
         writer.add_figure(
@@ -72,28 +91,50 @@ def print_results(overall_results, writer: SummaryWriter):
         # START: forgetting plot
         ########################################################################################################
 
-        # TODO the following only consider the first run
-
         # class accuracy history plot (only for first task)
         class_acc_history = []
 
         for key in results[0].keys():
             if "Top1_Acc_Exp/eval_phase/test_stream" in key:
-                np_array = np.array(results[0][key][1])
+                np_array = np.zeros((len(results[0][key][1]), len(results)))
+                for rep in range(len(results)):
+                    np_array[:, rep] = np.array(results[rep][key][1])
+
                 class_acc_history.append(np_array)
 
         fig, ax = plt.subplots(figsize=(10, 4), dpi=300)
 
         for i, class_acc in enumerate(class_acc_history):
-            xs = np.linspace(i, 5, len(class_acc))
+
+            color = cm.get_cmap("viridis")(i / len(class_acc_history))
 
             last_train_idx = math.floor(float(len(class_acc)) / (5 - i))
-            train_acc = np.max(class_acc[:last_train_idx])
-            forgetting = train_acc - class_acc
+
+            forgetting = np.zeros_like(class_acc)
+            train_acc = np.max(
+                class_acc[:last_train_idx]
+            )  # Maximum accuracy during training
+            forgetting[last_train_idx:] = train_acc - class_acc[last_train_idx:]
 
             # set forgetting to zero before learning on the experience
             forgetting[:last_train_idx] = 0
-            ax.plot(xs, forgetting, label=f"Testset with classes of task {i}")
+
+            # Calculate mean and standard deviation
+            mean_values = np.mean(forgetting, axis=1)
+            std_values = np.std(forgetting, axis=1)
+
+            xs = np.linspace(i, 5, mean_values.shape[0])
+            ax.plot(
+                xs, mean_values, color=color, label=f"Testset with classes of task {i}"
+            )
+
+            ax.fill_between(
+                xs,
+                mean_values - std_values,
+                mean_values + std_values,
+                color=color,
+                alpha=0.3,
+            )
 
         ax.set(
             xlabel=f"Start Training of Task i",
@@ -106,7 +147,7 @@ def print_results(overall_results, writer: SummaryWriter):
         for i in range(1, 5):
             ax.axvline(x=i, color="k", linestyle="--", alpha=0.25)
 
-        # show the plot
+        ax.set_ylim(0.0, 1.0)
 
         # save the plot to tensorboard
         writer.add_figure(f"{__strategy_name}/forgetting", fig, global_step=0)
@@ -169,6 +210,29 @@ def print_results(overall_results, writer: SummaryWriter):
             Patch(color=color_correct, label="Correct"),
         ]
         ax.legend(handles=legend_labels, loc="upper right")
+
+        boolean_map = np.array(correctly_classified)
+
+        # calculated the ratio of correctly classified samples per task
+        # that is for every 1/5 of the width of the boolean_map
+
+        print(f"\n\n{__strategy_name}")
+        for i in range(5):
+            area = boolean_map[:, i * last_train_idx : (i + 1) * last_train_idx]
+            ratio = np.sum(area) / area.size
+            print(f" - Task {i} correctly classified samples ratio: {ratio:.2f}")
+
+            # split the area into four quarters and calculate the ratio for each quarter
+            for j in range(4):
+                quarter = area[
+                    :, j * last_train_idx // 4 : (j + 1) * last_train_idx // 4
+                ]
+                quarter_ratio = np.sum(quarter) / quarter.size
+                print(
+                    f"   - Task {i} quarter {j} correctly classified samples ratio: {quarter_ratio:.2f}"
+                )
+
+        print("\n\n")
 
         # save the plot to tensorboard
         writer.add_figure(
