@@ -98,6 +98,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
 
         self.sample_per_epoch = sample_per_epoch
         self.task_idx = 0
+        self.epoch = 0
 
     def before_training(self, strategy: Template, *args, **kwargs) -> Any:
         """Adds the learning speed plugin to the strategy."""
@@ -212,11 +213,16 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
 
     def before_training_epoch(self, strategy: "SupervisedTemplate", **kwargs):
 
+        print(f"Epoch {self.epoch} for task {self.task_idx}")
+
         if self.sample_per_epoch:
             self.__sample_new_replay_samples(strategy, **kwargs)
 
+        self.epoch += 1
+
     def before_training_exp(self, strategy: "SupervisedTemplate", **kwargs):
 
+        self.epoch = 0
         if not self.sample_per_epoch:
             self.__sample_new_replay_samples(strategy, **kwargs)
 
