@@ -1,6 +1,9 @@
 from avalanche.training import Naive
 
 from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
+from geometric_aware_sampling.experiments.naive.forgetting_eval_plugin import (
+    ForgettingEvalPlugin,
+)
 
 
 class NaiveBaselineStrategy(BaseExperimentStrategy):
@@ -12,4 +15,4 @@ class NaiveBaselineStrategy(BaseExperimentStrategy):
     """
 
     def create_cl_strategy(self):
-        return Naive(**self.default_settings)
+        return Naive(**self.default_settings, plugins=[ForgettingEvalPlugin()])
