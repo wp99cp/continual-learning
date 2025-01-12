@@ -198,11 +198,14 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
 
             if i > 1:
                 # set the learning rate
-                self.optimizer.param_groups[0]["lr"] = 0.065
+                self.optimizer.param_groups[0]["lr"] = 0.01
 
             self.cl_strategy.train(
                 experience,
-                eval_streams=[self.cl_dataset.test_stream[:i]],
+                eval_streams=[
+                    self.cl_dataset.test_stream[:i],
+                    self.cl_dataset.train_stream[:i],
+                ],
                 tensorboard_logger=self.tensorboard_logger,
             )
 
