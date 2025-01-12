@@ -17,7 +17,7 @@ class ForgettingEvalPlugin(SupervisedPlugin):
     def compute_centroids(self, inputs, targets, model):
         # Reset centroids and counts
         with torch.no_grad():
-            outputs = model(inputs)  # Compute model outputs
+            outputs = model.extract_last_layer(inputs)  # Compute model outputs
 
         class_centroids = {}
         class_counts = {}
@@ -32,8 +32,8 @@ class ForgettingEvalPlugin(SupervisedPlugin):
                 class_counts[label] = 0
 
             # Update centroid and count for the class
-            class_centroids[label.item()] += label_outputs.sum(dim=0)
-            class_counts[label.item()] += label_outputs.size(0)
+            class_centroids[label] += label_outputs.sum(dim=0)
+            class_counts[label] += label_outputs.size(0)
 
         # Normalize centroids
         for label in class_centroids:
@@ -51,9 +51,11 @@ class ForgettingEvalPlugin(SupervisedPlugin):
 
         # Process the entire dataset
         model = strategy.model.eval()  # Set model to evaluation mode
+
         inputs, targets = zip(*[(data[0], data[1]) for data in self.complete_dataset])
-        inputs = torch.cat(inputs)
-        targets = torch.cat(targets)
+
+        inputs = torch.stack(list(inputs), dim=0).cuda()
+        targets = torch.tensor(targets)
 
         self.class_centroids, self.class_counts = self.compute_centroids(
             inputs, targets, model
@@ -75,8 +77,8 @@ class ForgettingEvalPlugin(SupervisedPlugin):
         model = strategy.model.eval()  # Set model to evaluation mode
         current_dataset = strategy.experience.dataset
         inputs, targets = zip(*[(data[0], data[1]) for data in current_dataset])
-        inputs = torch.cat(inputs)
-        targets = torch.cat(targets)
+        inputs = torch.stack(list(inputs), dim=0).cuda()
+        targets = torch.tensor(targets)
 
         new_centroids, _ = self.compute_centroids(inputs, targets, model)
 
