@@ -178,8 +178,8 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
             representations = get_representation(current_model, b.buffer)
             mean = representations.mean(dim=0)
             sigma = torch.cov(representations.T, correction=0)
-            # sigma += 1e-5 * torch.eye(sigma.size(0)) # Adding numerical stability
-            dists[c] = torch.distributions.LowRankMultivariateNormal(mean, sigma, 1e-5 * torch.ones(sigma.size(0)))
+            sigma += 1e-5 * torch.eye(sigma.size(0)) # Adding numerical stability
+            dists[c] = torch.distributions.MultivariateNormal(mean, sigma)
             mean_densities[c] = 0
 
         w_c = dict()
@@ -193,7 +193,7 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
                 for c_old, dist in dists.items():
                     p_x[c_old] = torch.exp(dist.log_prob(x)).item()
                 print(p_x)
-                s = sum(p_x.values()) + 1e-6 # add numerical stability
+                s = sum(p_x.values()) + 1e-7
                 for c_old in dists.keys():
                     p_x[c_old] = p_x[c_old] / s
                     w_c[c_old] += p_x[c_old]
