@@ -158,6 +158,12 @@ def get_representation(model: torch.nn.Module, dataset):
     model.train(model_mode)
     return torch.cat(representations, dim=0)
 
+def distribution_multivariate(query_point, mean, cov_inv, cov_det):
+    n = mean.size(0)
+    diff = query_point - mean
+    normalization = 1 / cov_det.sqrt()
+    exponent = -0.5 * (diff.T @ cov_inv @ diff)
+    return (normalization * torch.exp(exponent)).item()
 
 class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
     """
@@ -171,15 +177,20 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
         Computes representation means of all classes. From them, it calculates
         the ratio based on the inverse of the distance.
         """
-        dists = dict()
         mean_densities = dict()
+        means = dict()
+        sigmas = dict()
+        inv_sigmas = dict()
+        det_sigmas = dict()
 
         for c, b in self.balanced_buffer.buffer_groups.items():
             representations = get_representation(current_model, b.buffer)
-            mean = representations.mean(dim=0)
-            sigma = torch.cov(representations.T, correction=0)
-            sigma += 1e-5 * torch.eye(sigma.size(0)) # Adding numerical stability
-            dists[c] = torch.distributions.MultivariateNormal(mean, sigma)
+            means[c] = representations.mean(dim=0)
+            sigmas[c] = torch.cov(representations.T, correction=0)
+            sigmas[c] += 1e-5 * torch.eye(sigmas[c].size(0)) # Adding numerical stability
+            query_point = query_point.to(dtype=torch.float32)
+            inv_sigmas[c] = torch.linalg.inv(sigmas[c])
+            det_sigmas[c] = torch.linalg.inv(det_sigmas[c])
             mean_densities[c] = 0
 
         w_c = dict()
@@ -187,19 +198,20 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
             curr_dataset = current_exp_dataset.subset(ids)
             representations = get_representation(current_model, curr_dataset)
 
-            w_c = dict({c_old: 0.0 for c_old in dists.keys()})
+            w_c = dict({c_old: 0.0 for c_old in means.keys()})
             for x in representations:
                 p_x = dict()
-                for c_old, dist in dists.items():
-                    p_x[c_old] = torch.exp(dist.log_prob(x)).item()
+                for c_old in means.keys():
+                    p_x[c_old] = distribution_multivariate(x, means[c_old], inv_sigmas[c_old], det_sigmas[c_old]) 
                 print(p_x)
                 s = sum(p_x.values()) + 1e-7
-                for c_old in dists.keys():
+
+                for c_old in means.keys():
                     p_x[c_old] = p_x[c_old] / s
                     w_c[c_old] += p_x[c_old]
                 
             s = sum(w_c.values())
-            for c_old in dists.keys():
+            for c_old in means.keys():
                 mean_densities[c_old] += w_c[c_old] / s
 
         for c, mean_density in mean_densities.items():
