@@ -1,6 +1,5 @@
 from typing import Type
 
-import avalanche.training
 import torch
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils.utils import concat_datasets
@@ -9,9 +8,6 @@ from avalanche.training.templates import SupervisedTemplate
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 
-avalanche.training.ICaRL
-
-import traceback
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     RandomSamplingStrategy,
