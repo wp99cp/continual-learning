@@ -129,7 +129,9 @@ class CoPEGeometricPlugin(SupervisedPlugin, supports_distributed=False):
         self.ppp_loss = PPPloss(self.p_mem, T=self.T)
         self.alpha = alpha
 
-        self.n_classes = 100
+        self.classes = torch.empty(0)
+        self.n_classes = 0
+        self.class_id_to_idx = {}
 
         self.sample_per_epoch = sample_per_epoch
         self.task_idx = 0
@@ -185,6 +187,7 @@ class CoPEGeometricPlugin(SupervisedPlugin, supports_distributed=False):
                     .detach()
                     .to(targets.device)
                 )
+                self.class_id_to_idx[c] = len(self.class_id_to_idx)
 
     @torch.no_grad()
     def _update_running_prototypes(self, strategy):
@@ -298,6 +301,14 @@ class CoPEGeometricPlugin(SupervisedPlugin, supports_distributed=False):
             f"   with {len(full_set)} unique samples ({100 *(len(full_set) / (len(dataset) * global_batch_size)):.2f}%)"
         )
 
+    def before_eval_forward(self, strategy: Template, *args, **kwargs) -> Any:
+        """Has to create prototypes for new classes in the upcoming experience."""
+
+        new_class = torch.unique(strategy.mb_y)
+        self.classes = torch.unique(torch.cat([self.classes, new_class]))
+
+        self._init_new_prototypes(self.classes)
+
     def before_training_epoch(self, strategy: "SupervisedTemplate", **kwargs):
 
         if self.sample_per_epoch:
@@ -375,7 +386,9 @@ class CoPEGeometricPlugin(SupervisedPlugin, supports_distributed=False):
             return torch.Tensor(ns, n_classes).fill_(1.0 / n_classes).to(x.device)
         means = torch.ones(seen_c, nd).to(x.device) * float("inf")
         for c, c_proto in self.p_mem.items():
-            means[c] = c_proto  # Class idx gets allocated its prototype
+            means[self.class_id_to_idx[c]] = (
+                c_proto  # Class idx gets allocated its prototype
+            )
 
         # Predict nearest mean
         classpred = torch.LongTensor(ns)
@@ -434,7 +447,8 @@ class PPPloss(object):
 
         # All prototypes
         p_y = torch.tensor([c for c in self.p_mem.keys()]).to(x.device).detach()
-        p_x = torch.cat([self.p_mem[c.item()] for c in p_y]).to(x.device).detach()
+        if len(p_y) != 0:
+            p_x = torch.cat([self.p_mem[c.item()] for c in p_y]).to(x.device).detach()
 
         for label_idx in range(y_unique.size(0)):  # Per-class operation
             c = y_unique[label_idx]
