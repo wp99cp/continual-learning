@@ -188,7 +188,6 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
             means[c] = representations.mean(dim=0)
             sigmas[c] = torch.cov(representations.T, correction=0)
             sigmas[c] += 1e-5 * torch.eye(sigmas[c].size(0)) # Adding numerical stability
-            query_point = query_point.to(dtype=torch.float32)
             inv_sigmas[c] = torch.linalg.inv(sigmas[c])
             det_sigmas[c] = torch.linalg.inv(det_sigmas[c])
             mean_densities[c] = 0
