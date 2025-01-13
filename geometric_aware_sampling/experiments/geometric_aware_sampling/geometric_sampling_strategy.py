@@ -6,6 +6,7 @@ import torch
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
+import torch.distributions.multivariate_normal
 from torch.masked import softmax, log_softmax
 from torch.utils.data import DataLoader
 
@@ -157,6 +158,44 @@ def get_representation(model: torch.nn.Module, dataset):
     model.train(model_mode)
     return torch.cat(representations, dim=0)
 
+class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
+    """
+    Strategy, that samples based on the gaussian mixture distribution of prototypes
+    """
+
+    def before_experience(
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+    ):
+        """
+        Computes representation means of all classes. From them, it calculates
+        the ratio based on the inverse of the distance.
+        """
+        dists = dict()
+        mean_densities = dict()
+
+        for c, b in self.balanced_buffer.buffer_groups.items():
+            representations = get_representation(current_model, b.buffer)
+            mean = representations.mean(dim=0)
+            sigma = torch.cov(representations.T)
+            dists[c] = torch.distributions.MultivariateNormal(mean, sigma)
+            mean_densities[c] = 0
+
+        for c, ids in current_exp_dataset.targets.val_to_idx.items():
+            curr_dataset = current_exp_dataset.subset(ids)
+            representations = get_representation(current_model, curr_dataset)
+
+            # compute norm
+            w_c = dict()
+            for c_old, dist in dists.items():
+                w_c[c_old] = torch.exp(dist.log_prob()).item()
+
+            s = sum(w_c.values())
+            for c_old in dists.keys():
+                mean_densities[c_old] += w_c[c_old] / s
+
+        for c, mean_density in mean_densities.items():
+            # sum(inv_distances.values()) == n_classes
+            self.ratios[c] = mean_density / sum(mean_densities.values())
 
 class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
     """
