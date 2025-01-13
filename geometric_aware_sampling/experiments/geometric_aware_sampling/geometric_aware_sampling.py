@@ -6,6 +6,7 @@ from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plu
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     RandomSamplingStrategy,
+    DistributionWeightedSamplingStrategy,
     DistanceWeightedSamplingStrategy,
     DistanceWeightedScattering,
     DistanceWeightedSamplingStrategy_KL,
@@ -258,6 +259,24 @@ class GeoAware_WeightedSampling(BaseExperimentStrategy):
             plugins=[
                 GeometricPlugin(
                     sampling_strategy=DistanceWeightedSamplingStrategy,
+                    replay_ratio=REPLAY_RATIO,
+                    mem_size=MAX_MEMORY_SIZE,
+                    q=Q,
+                    p=P,  # TODO: tune per dataset to ensure unique samples
+                ),
+                # RepresentationPlugin(),
+            ],
+        )
+
+
+class GeoAware_DistributionWeightedSampling(BaseExperimentStrategy):
+    def create_cl_strategy(self):
+
+        return SupervisedTemplate(
+            **self.default_settings,
+            plugins=[
+                GeometricPlugin(
+                    sampling_strategy=DistributionWeightedSamplingStrategy,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,

@@ -5,6 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
     GeoAware_Baseline_1_WithoutGoldilock,
     GeoAware_Baseline_1,
+    GeoAware_DistributionWeightedSampling,
     GeoAware_WeightedSampling,
     GeoAware_Scattering,
     GeoAware_WeightedSampling_WithoutGoldilock,
@@ -40,7 +41,7 @@ def main():
         "n_experiences": 5,  # thus we have the same setup as for the GoldiLockPaper
         "stop_after_n_experiences": 3,  # only trains the first n_experiences resp. tasks then stops
         "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 100,
+        "train_epochs": 1,
     }
 
     # define the number of repetitions for each experiment
@@ -72,12 +73,13 @@ def main():
         # all the following baselines use the same buffer
         # size and batch size throughout the experiments
         ###################################
-        GeoAware_Baseline_1,
-        GeoAware_Baseline_1_WithoutGoldilock,
-        GeoAware_WeightedSampling,
-        GeoAware_WeightedSamplingExp,
-        GeoAware_WeightedSampling_WithoutGoldilock,
-        GeoAware_WeightedSamplingExp_WithoutGoldilock,
+        GeoAware_DistributionWeightedSampling,
+        # GeoAware_Baseline_1,
+        # GeoAware_Baseline_1_WithoutGoldilock,
+        # GeoAware_WeightedSampling,
+        # GeoAware_WeightedSamplingExp,
+        # GeoAware_WeightedSampling_WithoutGoldilock,
+        # GeoAware_WeightedSamplingExp_WithoutGoldilock,
         # GeoAware_Scattering,
         # GeoAware_Scattering_WithoutGoldilock,
         # GeoAware_NearestNeighbor,

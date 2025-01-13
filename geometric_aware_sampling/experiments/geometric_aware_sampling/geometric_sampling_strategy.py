@@ -158,6 +158,7 @@ def get_representation(model: torch.nn.Module, dataset):
     model.train(model_mode)
     return torch.cat(representations, dim=0)
 
+
 class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
     """
     Strategy, that samples based on the gaussian mixture distribution of prototypes
@@ -176,19 +177,27 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
         for c, b in self.balanced_buffer.buffer_groups.items():
             representations = get_representation(current_model, b.buffer)
             mean = representations.mean(dim=0)
-            sigma = torch.cov(representations.T)
-            dists[c] = torch.distributions.MultivariateNormal(mean, sigma)
+            sigma = torch.cov(representations.T, correction=0)
+            # sigma += 1e-5 * torch.eye(sigma.size(0)) # Adding numerical stability
+            dists[c] = torch.distributions.LowRankMultivariateNormal(mean, sigma, 1e-5 * torch.ones(sigma.size(0)))
             mean_densities[c] = 0
 
+        w_c = dict()
         for c, ids in current_exp_dataset.targets.val_to_idx.items():
             curr_dataset = current_exp_dataset.subset(ids)
             representations = get_representation(current_model, curr_dataset)
 
-            # compute norm
-            w_c = dict()
-            for c_old, dist in dists.items():
-                w_c[c_old] = torch.exp(dist.log_prob()).item()
-
+            w_c = dict({c_old: 0.0 for c_old in dists.keys()})
+            for x in representations:
+                p_x = dict()
+                for c_old, dist in dists.items():
+                    p_x[c_old] = torch.exp(dist.log_prob(x)).item()
+                print(p_x)
+                s = sum(p_x.values()) + 1e-6 # add numerical stability
+                for c_old in dists.keys():
+                    p_x[c_old] = p_x[c_old] / s
+                    w_c[c_old] += p_x[c_old]
+                
             s = sum(w_c.values())
             for c_old in dists.keys():
                 mean_densities[c_old] += w_c[c_old] / s
@@ -196,6 +205,7 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
         for c, mean_density in mean_densities.items():
             # sum(inv_distances.values()) == n_classes
             self.ratios[c] = mean_density / sum(mean_densities.values())
+
 
 class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
     """
