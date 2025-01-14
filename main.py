@@ -42,7 +42,7 @@ def main():
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 5
+    repetitions = 1
 
     experiments = [
         ###################################
