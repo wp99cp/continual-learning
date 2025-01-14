@@ -3,10 +3,10 @@ from abc import ABC
 
 import numpy as np
 import torch
+import torch.distributions.multivariate_normal
 from avalanche.benchmarks import AvalancheDataset
 from avalanche.benchmarks.utils import concat_datasets
 from avalanche.training import BalancedExemplarsBuffer
-import torch.distributions.multivariate_normal
 from torch.masked import softmax, log_softmax
 from torch.utils.data import DataLoader
 
@@ -165,6 +165,14 @@ def distribution_multivariate(query_point, mean, cov_inv, cov_det):
     exponent = -0.5 * (diff.T @ cov_inv @ diff)
     return (normalization * torch.exp(exponent)).item()
 
+def distribution_multivariate(query_point, mean, cov_inv, cov_det):
+    n = mean.size(0)
+    diff = query_point - mean
+    normalization = 1 / cov_det.sqrt()
+    exponent = -0.5 * (diff.T @ cov_inv @ diff)
+    return (normalization * torch.exp(exponent)).item()
+
+
 class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
     """
     Strategy, that samples based on the gaussian mixture distribution of prototypes
@@ -187,9 +195,11 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
             representations = get_representation(current_model, b.buffer)
             means[c] = representations.mean(dim=0)
             sigmas[c] = torch.cov(representations.T, correction=0)
-            sigmas[c] += 1e-5 * torch.eye(sigmas[c].size(0)) # Adding numerical stability
+            sigmas[c] += 1e-5 * torch.eye(
+                sigmas[c].size(0)
+            )  # Adding numerical stability
             inv_sigmas[c] = torch.linalg.inv(sigmas[c])
-            det_sigmas[c] = torch.linalg.inv(det_sigmas[c])
+            det_sigmas[c] = torch.linalg.det(sigmas[c])
             mean_densities[c] = 0
 
         w_c = dict()
@@ -201,14 +211,15 @@ class DistributionWeightedSamplingStrategy(BufferSamplingStrategy):
             for x in representations:
                 p_x = dict()
                 for c_old in means.keys():
-                    p_x[c_old] = distribution_multivariate(x, means[c_old], inv_sigmas[c_old], det_sigmas[c_old]) 
+                    p_x[c_old] = distribution_multivariate(
+                        x, means[c_old], inv_sigmas[c_old], det_sigmas[c_old])
                 print(p_x)
                 s = sum(p_x.values()) + 1e-7
 
                 for c_old in means.keys():
                     p_x[c_old] = p_x[c_old] / s
                     w_c[c_old] += p_x[c_old]
-                
+
             s = sum(w_c.values())
             for c_old in means.keys():
                 mean_densities[c_old] += w_c[c_old] / s

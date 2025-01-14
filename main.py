@@ -3,15 +3,7 @@ import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
-    GeoAware_Baseline_1_WithoutGoldilock,
-    GeoAware_Baseline_1,
     GeoAware_DistributionWeightedSampling,
-    GeoAware_WeightedSampling,
-    GeoAware_Scattering,
-    GeoAware_WeightedSampling_WithoutGoldilock,
-    GeoAware_Scattering_WithoutGoldilock,
-    GeoAware_WeightedSamplingExp_WithoutGoldilock,
-    GeoAware_WeightedSamplingExp,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -38,15 +30,15 @@ def main():
         "args": args,
         "dataset_name": "split_cifar100",  # "split_cifar100", "split_mnist", "split_tiny_imagenet", or "split_fmnist
         "model_name": "slim_resnet18",  # "slim_resnet18", "resnet50", "resnet101", or "resnet152"
-        "n_experiences": 5,  # thus we have the same setup as for the GoldiLockPaper
-        "stop_after_n_experiences": 3,  # only trains the first n_experiences resp. tasks then stops
+        "n_experiences": 50,  # thus we have the same setup as for the GoldiLockPaper
+        "stop_after_n_experiences": 2,  # only trains the first n_experiences resp. tasks then stops
         "batch_size": 64,  # for replay based strategies, the actual batch size is batch_size * 2
-        "train_epochs": 1,
+        "train_epochs": 20,
     }
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 10
+    repetitions = 1
 
     experiments = [
         ###################################
