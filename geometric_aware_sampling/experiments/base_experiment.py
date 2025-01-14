@@ -198,7 +198,7 @@ class BaseExperimentStrategy(metaclass=LogEnabledABC):
 
             if i > 1:
                 # set the learning rate
-                self.optimizer.param_groups[0]["lr"] = 0.065
+                self.optimizer.param_groups[0]["lr"] = 0.05
 
             self.cl_strategy.train(
                 experience,

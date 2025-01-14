@@ -5,15 +5,12 @@ from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plu
     GeometricPlugin,
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
-    RandomSamplingStrategy,
+    RandomSamplingStrategyWithEqualClassWeights,
     DistanceWeightedSamplingStrategy,
     DistanceWeightedScattering,
     DistanceWeightedSamplingStrategy_KL,
     NearestNeighborSamplingStrategy,
     DistanceWeightedSamplingStrategyExp,
-)
-from geometric_aware_sampling.experiments.geometric_aware_sampling.representation_plugin import (
-    RepresentationPlugin,
 )
 
 # full cifar100 dataset (however this is just a theoretical value)
@@ -38,14 +35,10 @@ REPLAY_RATIO = 8.0 / 64  # that is 8 samples per mini-batch
 P = 1424
 
 
-class GeoAware_Baseline_1_WithoutGoldilock(BaseExperimentStrategy):
+class Baseline_RandomSampling(BaseExperimentStrategy):
     """
-
-    This strategy implements the baseline 1 for the Geometric Aware Sampling.
-    We use learning rate based sampling for buffer population.
-
-    We use random replay selection for the replay buffer.
-
+    Baseline with random buffer selection and random replay sampling with
+    equal amounts of samples per class.
     """
 
     def create_cl_strategy(self):
@@ -54,59 +47,19 @@ class GeoAware_Baseline_1_WithoutGoldilock(BaseExperimentStrategy):
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=RandomSamplingStrategy,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    q=Q,
-                    upper_quantile=1,
-                    lower_quantile=0,
-                    # we use all samples in the buffer,
-                    # random sampling is done during mini-batch creation
-                    # this should be equivalent to sampling the correct number of
-                    # samples here, then we have no selection during mini-batch creation
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_WeightedSampling_WithoutGoldilock(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=DistanceWeightedSamplingStrategy,
+                    sampling_strategy=RandomSamplingStrategyWithEqualClassWeights,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     lower_quantile=0,
                     upper_quantile=1,
                     q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
+                    p=P,
                 ),
-                # RepresentationPlugin(),
             ],
         )
 
 
-class GeoAware_WeightedSamplingExp_WithoutGoldilock(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
+class Baseline_Goldilocks_RandomSampling(BaseExperimentStrategy):
 
     def create_cl_strategy(self):
 
@@ -114,142 +67,35 @@ class GeoAware_WeightedSamplingExp_WithoutGoldilock(BaseExperimentStrategy):
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=DistanceWeightedSamplingStrategyExp,
+                    sampling_strategy=RandomSamplingStrategyWithEqualClassWeights,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
-                    lower_quantile=0,
-                    upper_quantile=1,
                     q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
+                    p=P,
                 ),
-                # RepresentationPlugin(),
             ],
         )
 
 
-class GeoAware_KL_WithoutGoldilock(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
+class Baseline_Icarl_RandomSampling(BaseExperimentStrategy):
 
     def create_cl_strategy(self):
-
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=DistanceWeightedSamplingStrategy_KL,
+                    sampling_strategy=RandomSamplingStrategyWithEqualClassWeights,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
-                    lower_quantile=0,
-                    upper_quantile=1,
                     q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
+                    p=1424,
+                    storage_policy="ICarl",
                 ),
-                # RepresentationPlugin(),
             ],
         )
 
 
-class GeoAware_Scattering_WithoutGoldilock(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=DistanceWeightedScattering,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    lower_quantile=0,
-                    upper_quantile=1,
-                    q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_NearestNeighbor_WithoutGoldilock(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=NearestNeighborSamplingStrategy,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    lower_quantile=0,
-                    upper_quantile=1,
-                    q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_Baseline_1(BaseExperimentStrategy):
-    """
-
-    This strategy implements the baseline 1 for the Geometric Aware Sampling.
-    We use learning rate based sampling for buffer population.
-
-    We use random replay selection for the replay buffer.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=RandomSamplingStrategy,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    q=Q,
-                    # we use all samples in the buffer,
-                    # random sampling is done during mini-batch creation
-                    # this should be equivalent to sampling the correct number of
-                    # samples here, then we have no selection during mini-batch creation
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_WeightedSampling(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
+class GeoAware_Goldilocks_WeightedSampling_Inv(BaseExperimentStrategy):
 
     def create_cl_strategy(self):
 
@@ -261,21 +107,13 @@ class GeoAware_WeightedSampling(BaseExperimentStrategy):
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
+                    p=P,
                 ),
-                # RepresentationPlugin(),
             ],
         )
 
 
-class GeoAware_WeightedSamplingExp(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
+class GeoAware_Goldilocks_WeightedSampling_Exp(BaseExperimentStrategy):
 
     def create_cl_strategy(self):
 
@@ -284,84 +122,6 @@ class GeoAware_WeightedSamplingExp(BaseExperimentStrategy):
             plugins=[
                 GeometricPlugin(
                     sampling_strategy=DistanceWeightedSamplingStrategyExp,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_KL(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=DistanceWeightedSamplingStrategy_KL,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_Scattering(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=DistanceWeightedScattering,
-                    replay_ratio=REPLAY_RATIO,
-                    mem_size=MAX_MEMORY_SIZE,
-                    q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
-                ),
-                # RepresentationPlugin(),
-            ],
-        )
-
-
-class GeoAware_NearestNeighbor(BaseExperimentStrategy):
-    """
-
-    Implements the Geometric Aware Sampling continual learning strategy
-    as described in our paper with weighted sampling according to the distance of
-    means.
-
-    """
-
-    def create_cl_strategy(self):
-
-        return SupervisedTemplate(
-            **self.default_settings,
-            plugins=[
-                GeometricPlugin(
-                    sampling_strategy=NearestNeighborSamplingStrategy,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,

@@ -3,14 +3,11 @@ import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
-    GeoAware_Baseline_1_WithoutGoldilock,
-    GeoAware_Baseline_1,
-    GeoAware_WeightedSampling,
-    GeoAware_Scattering,
-    GeoAware_WeightedSampling_WithoutGoldilock,
-    GeoAware_Scattering_WithoutGoldilock,
-    GeoAware_WeightedSamplingExp_WithoutGoldilock,
-    GeoAware_WeightedSamplingExp,
+    Baseline_Goldilocks_RandomSampling,
+    Baseline_RandomSampling,
+    Baseline_Icarl_RandomSampling,
+    GeoAware_Goldilocks_WeightedSampling_Inv,
+    GeoAware_Goldilocks_WeightedSampling_Exp,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -45,7 +42,7 @@ def main():
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 10
+    repetitions = 5
 
     experiments = [
         ###################################
@@ -59,29 +56,18 @@ def main():
         # original paper algorithms
         ###################################
         # PPPLossStrategy,
-        # GoldilocksBaselineStrategy, # this is outdated and should not be used
-        #
-        #
-        ###################################
-        # here the batchsize is wrong
-        ###################################
-        # ReplayBaselineStrategy,
+        # GoldilocksBaselineStrategy,
         #
         #
         ###################################
         # all the following baselines use the same buffer
         # size and batch size throughout the experiments
         ###################################
-        GeoAware_Baseline_1,
-        GeoAware_Baseline_1_WithoutGoldilock,
-        GeoAware_WeightedSampling,
-        GeoAware_WeightedSamplingExp,
-        GeoAware_WeightedSampling_WithoutGoldilock,
-        GeoAware_WeightedSamplingExp_WithoutGoldilock,
-        # GeoAware_Scattering,
-        # GeoAware_Scattering_WithoutGoldilock,
-        # GeoAware_NearestNeighbor,
-        # GeoAware_NearestNeighbor_WithoutGoldilock,
+        Baseline_RandomSampling,
+        Baseline_Goldilocks_RandomSampling,
+        Baseline_Icarl_RandomSampling,
+        GeoAware_Goldilocks_WeightedSampling_Inv,
+        GeoAware_Goldilocks_WeightedSampling_Exp,
     ]
 
     overall_results = {}

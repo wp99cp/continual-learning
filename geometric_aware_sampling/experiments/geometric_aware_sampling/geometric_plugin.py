@@ -11,6 +11,7 @@ from packaging.version import parse
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_balanced_buffer import (
     GeometricBalancedBuffer,
+    GeometricBalancedBufferICarl,
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
     BufferSamplingStrategy,
@@ -74,6 +75,7 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
         q: float = 0.4,
         p: float = 1.0,
         sample_per_epoch: bool = True,  # we want new samples per epoch
+        storage_policy="LearningSpeed",
     ):
         super().__init__()
         self.batch_size = None
@@ -84,17 +86,32 @@ class GeometricPlugin(SupervisedPlugin, supports_distributed=False):
 
         self.has_added_learning_speed_plugin = False
 
-        # The storage policy samples the data based on the learning speed
-        # and stores the samples in the external memory.
-        self.storage_policy = GeometricBalancedBuffer(
-            max_size=self.mem_size,
-            adaptive_size=True,
-            upper_quantile_ls=upper_quantile,
-            lower_quantile_ls=lower_quantile,
-            q=q,
-            p=p,
-            sampling_strategy=sampling_strategy,
-        )
+        if storage_policy == "LearningSpeed":
+            # The storage policy samples the data based on the learning speed
+            # and stores the samples in the external memory.
+            self.storage_policy = GeometricBalancedBuffer(
+                max_size=self.mem_size,
+                adaptive_size=True,
+                upper_quantile_ls=upper_quantile,
+                lower_quantile_ls=lower_quantile,
+                q=q,
+                p=p,
+                sampling_strategy=sampling_strategy,
+            )
+        elif storage_policy == "ICarl":
+            # The storage policy samples the data based on the learning speed
+            # and stores the samples in the external memory.
+            self.storage_policy = GeometricBalancedBufferICarl(
+                max_size=self.mem_size,
+                adaptive_size=True,
+                upper_quantile_ls=upper_quantile,
+                lower_quantile_ls=lower_quantile,
+                q=q,
+                p=p,
+                sampling_strategy=sampling_strategy,
+            )
+        else:
+            raise ValueError("Unsupported storage policy " + storage_policy)
 
         self.sample_per_epoch = sample_per_epoch
         self.task_idx = 0

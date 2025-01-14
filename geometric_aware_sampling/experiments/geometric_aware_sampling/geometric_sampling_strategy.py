@@ -66,9 +66,11 @@ class BufferSamplingStrategy(ABC):
         )
 
         print(
-            f" » This we sample {[
+            f" » Thus we sample {[
             int(replay_size * r) for r in self.ratios.values()
-        ]} samples per class for classes {list(self.ratios.keys())} with replace {
+        ]} samples per class for classes {[     
+            int(cls.item()) if isinstance(cls, torch.Tensor) else int(cls) for cls in self.ratios.keys()
+        ]} with replace {
         [len(buffer) < int(replay_size * r) for r in self.ratios.values()]
         }"
         )
@@ -110,7 +112,7 @@ class BufferSamplingStrategy(ABC):
         return buffer
 
 
-class RandomSamplingStrategy(BufferSamplingStrategy):
+class RandomSamplingStrategyWithEqualClassWeights(BufferSamplingStrategy):
     """
     Strategy that samples randomly from the buffer while balancing the
     number of samples per experience. This is used for baseline 1.
