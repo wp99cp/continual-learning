@@ -1,8 +1,8 @@
 import datetime
 import traceback
 
-from prototype_based_replay_selection.utils.file_handler import save_results_to_pkl
-from prototype_based_replay_selection.utils.logging.settings import TENSORBOARD_DIR
+from prototype_based_sampling.utils.file_handler import save_results_to_pkl
+from prototype_based_sampling.utils.logging.settings import TENSORBOARD_DIR
 
 
 def run_experiments(
