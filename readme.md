@@ -1,4 +1,4 @@
-# Prototype-based Sampling for Class-Incremental Learning
+# Prototype-Based Sampling for Class-Incremental Learning
 
 ## Reproduce the Experiments
 
