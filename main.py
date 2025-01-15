@@ -7,7 +7,8 @@ from prototype_based_sampling.experiments.prototype_based_replay_selection.proto
     Baseline_Random_Random,
     Baseline_Icarl_Random,
     PrototypeBased_Goldilocks_MaxScatter,
-    PrototypeBased_Goldilocks_InvertedDistance, PrototypeBased_Goldilocks_ExponentialDistance,
+    PrototypeBased_Goldilocks_InvertedDistance,
+    PrototypeBased_Goldilocks_ExponentialDistance,
 )
 from prototype_based_sampling.experiments.run_experiments import run_experiments
 from prototype_based_sampling.results.print_results import print_results

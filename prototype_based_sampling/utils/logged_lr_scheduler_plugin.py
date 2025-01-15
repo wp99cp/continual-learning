@@ -33,7 +33,9 @@ class LoggedLRSchedulerPlugin(LRSchedulerPlugin):
         )
 
         # check if self.scheduler is ReduceLROnPlateau
-        if hasattr(self.scheduler, "num_bad_epochs") and hasattr(self.scheduler, "patience"):
+        if hasattr(self.scheduler, "num_bad_epochs") and hasattr(
+            self.scheduler, "patience"
+        ):
             kwargs["tensorboard_logger"].writer.add_scalar(
                 f"lr_scheduler/remaining_patience/Task{str(experience).zfill(3)}",
                 self.scheduler.patience - self.scheduler.num_bad_epochs,

@@ -20,7 +20,7 @@ class BufferSamplingStrategy(ABC):
         self.ratios = dict()
 
     def before_experience(
-            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         This method is called before a new experience is encountered.
@@ -29,11 +29,11 @@ class BufferSamplingStrategy(ABC):
         raise NotImplementedError
 
     def sample(
-            self,
-            replay_size: int,
-            _num_exps: int,
-            current_model: torch.nn.Module | None = None,
-            current_exp_dataset: AvalancheDataset = None,
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+        current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
         """
         Sample elements from the buffer.
@@ -116,11 +116,11 @@ class RandomSamplingWithEqualClassWeights(BufferSamplingStrategy):
     """
 
     def sample(
-            self,
-            replay_size: int,
-            _num_exps: int,
-            current_model: torch.nn.Module | None = None,
-            current_exp_dataset: AvalancheDataset = None,
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+        current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
         buffer = self.complete_buffer
         idxs = np.random.choice(
@@ -162,7 +162,7 @@ class InvertedDistanceWeightedSampling(BufferSamplingStrategy):
     """
 
     def before_experience(
-            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -197,7 +197,7 @@ class InvertedDistanceWeightedSampling(BufferSamplingStrategy):
 class DistanceWeightedSamplingStrategy_KL(BufferSamplingStrategy):
 
     def before_experience(
-            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -242,7 +242,7 @@ class NegativeExponentialDistanceWeighted(BufferSamplingStrategy):
     """
 
     def before_experience(
-            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -281,7 +281,7 @@ class WithingClassMaxScatter(BufferSamplingStrategy):
     """
 
     def before_experience(
-            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -301,11 +301,11 @@ class WithingClassMaxScatter(BufferSamplingStrategy):
 class NearestNeighborSamplingStrategy(BufferSamplingStrategy):
 
     def sample(
-            self,
-            replay_size: int,
-            _num_exps: int,
-            current_model: torch.nn.Module | None = None,
-            current_exp_dataset: AvalancheDataset = None,
+        self,
+        replay_size: int,
+        _num_exps: int,
+        current_model: torch.nn.Module | None = None,
+        current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
         buffer = self.complete_buffer
 

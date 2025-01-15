@@ -7,7 +7,8 @@ from prototype_based_sampling.experiments.prototype_based_replay_selection.proto
 from prototype_based_sampling.experiments.prototype_based_replay_selection.prototype_based_replay_selection_strategy import (
     RandomSamplingWithEqualClassWeights,
     InvertedDistanceWeightedSampling,
-    NegativeExponentialDistanceWeighted, WithingClassMaxScatter,
+    NegativeExponentialDistanceWeighted,
+    WithingClassMaxScatter,
 )
 
 # full cifar100 dataset (however this is just a theoretical value)
