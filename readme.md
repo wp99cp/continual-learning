@@ -2,8 +2,6 @@
 
 ## Reproduce the Experiments
 
-To reproduce the results you need a GPU with at least 16GB of memory.
-
 1) Clone the repository
 2) Install the requirements
    ```bash
@@ -20,6 +18,8 @@ To reproduce the results you need a GPU with at least 16GB of memory.
     # run the experiments
     python main.py
     ```
+
+We are using Python 3.12 for this project.
 
 ## Hyperparameters
 
