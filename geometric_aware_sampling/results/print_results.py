@@ -53,7 +53,7 @@ def print_results(overall_results, writer: SummaryWriter):
             mean_values = np.mean(values, axis=1)
             std_values = np.std(values, axis=1)
 
-            xs = np.linspace(i, 5, mean_values.shape[0])
+            xs = np.linspace(i, 3, mean_values.shape[0])
             ax.plot(
                 xs, mean_values, color=color, label=f"Testset with classes of task {i}"
             )
@@ -73,10 +73,12 @@ def print_results(overall_results, writer: SummaryWriter):
         )
         ax.legend()
 
-        for i in range(1, 5):
+        for i in range(1, 3):
             ax.axvline(x=i, color="k", linestyle="--", alpha=0.25)
 
         ax.set_ylim(0.1, 1.0)
+
+        ax.set_xticks([0, 1, 2, 3])
 
         # save the plot to tensorboard
         writer.add_figure(
@@ -108,7 +110,7 @@ def print_results(overall_results, writer: SummaryWriter):
 
             color = cm.get_cmap("viridis")(i / len(class_acc_history))
 
-            last_train_idx = math.floor(float(len(class_acc)) / (5 - i))
+            last_train_idx = math.floor(float(len(class_acc)) / (3 - i))
 
             forgetting = np.zeros_like(class_acc)
             train_acc = np.max(
@@ -123,7 +125,7 @@ def print_results(overall_results, writer: SummaryWriter):
             mean_values = np.mean(forgetting, axis=1)
             std_values = np.std(forgetting, axis=1)
 
-            xs = np.linspace(i, 5, mean_values.shape[0])
+            xs = np.linspace(i, 3, mean_values.shape[0])
             ax.plot(
                 xs, mean_values, color=color, label=f"Testset with classes of task {i}"
             )
@@ -144,10 +146,12 @@ def print_results(overall_results, writer: SummaryWriter):
 
         ax.legend()
 
-        for i in range(1, 5):
+        for i in range(1, 3):
             ax.axvline(x=i, color="k", linestyle="--", alpha=0.25)
 
         ax.set_ylim(0.0, 1.0)
+
+        ax.set_xticks([0, 1, 2, 3])
 
         # save the plot to tensorboard
         writer.add_figure(f"{__strategy_name}/forgetting", fig, global_step=0)
@@ -174,7 +178,7 @@ def print_results(overall_results, writer: SummaryWriter):
                 else:
                     assert length == len(results[0][key][1])
 
-        last_train_idx = math.floor(length / 5.0)
+        last_train_idx = math.floor(length / 3.0)
 
         # sort correctly_classified by the accumulated number of correctly classified samples
         # over the range [0, last_train_idx]
@@ -189,8 +193,8 @@ def print_results(overall_results, writer: SummaryWriter):
 
         # use special labels [0, 1, 2, 3, 4, 5] for the x-axis
         # evenly spaced on the range [0, length]
-        ax.set_xticks(np.linspace(0, length, 6))
-        ax.set_xticklabels([0, 1, 2, 3, 4, 5])
+        ax.set_xticks(np.linspace(0, length, 4))
+        ax.set_xticklabels([0, 1, 2, 3])
 
         # hide y-axis
         ax.get_yaxis().set_visible(False)
@@ -217,7 +221,7 @@ def print_results(overall_results, writer: SummaryWriter):
         # that is for every 1/5 of the width of the boolean_map
 
         print(f"\n\n{__strategy_name}")
-        for i in range(5):
+        for i in range(3):
             area = boolean_map[:, i * last_train_idx : (i + 1) * last_train_idx]
             ratio = np.sum(area) / area.size
             print(f" - Task {i} correctly classified samples ratio: {ratio:.2f}")

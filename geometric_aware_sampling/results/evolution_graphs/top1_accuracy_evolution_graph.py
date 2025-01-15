@@ -20,7 +20,7 @@ def top1_accuracy_evolution_graph(writer: SummaryWriter, strategy_name, results)
 
     metrics_name = "Top1_Acc_Stream/eval_phase/test_stream"
     res_dict = {}
-    for task_idx in range(5):
+    for task_idx in range(3):
         task_name = f"Task{task_idx:03d}"
         full_metric_name = f"{metrics_name}/{task_name}"
 
