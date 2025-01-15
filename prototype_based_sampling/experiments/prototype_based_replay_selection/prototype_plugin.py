@@ -9,14 +9,14 @@ from avalanche.training.plugins import (
 from avalanche.training.templates import SupervisedTemplate
 from packaging.version import parse
 
-from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_balanced_buffer import (
+from prototype_based_sampling.experiments.prototype_based_replay_selection.balanced_buffer import (
     GeometricBalancedBuffer,
     GeometricBalancedBufferICarl,
 )
-from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
+from prototype_based_sampling.experiments.prototype_based_replay_selection.prototype_based_replay_selection_strategy import (
     BufferSamplingStrategy,
 )
-from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+from prototype_based_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
 

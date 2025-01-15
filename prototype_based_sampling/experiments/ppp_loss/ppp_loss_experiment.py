@@ -1,7 +1,7 @@
 from avalanche.training.plugins import CoPEPlugin
 from avalanche.training.templates import SupervisedTemplate
 
-from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
+from prototype_based_sampling.experiments.base_experiment import BaseExperimentStrategy
 
 
 class PPPLossStrategy(BaseExperimentStrategy):

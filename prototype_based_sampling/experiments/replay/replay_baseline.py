@@ -1,6 +1,6 @@
 from avalanche.training import Replay
 
-from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
+from prototype_based_sampling.experiments.base_experiment import BaseExperimentStrategy
 
 
 class ReplayBaselineStrategy(BaseExperimentStrategy):

@@ -1,6 +1,6 @@
 from avalanche.training import FromScratchTraining
 
-from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
+from prototype_based_sampling.experiments.base_experiment import BaseExperimentStrategy
 
 
 class RetrainBaselineStrategy(BaseExperimentStrategy):

@@ -1,4 +1,4 @@
-from geometric_aware_sampling.models.SlimResNet18 import (
+from prototype_based_sampling.models.SlimResNet18 import (
     SlimResNet18,
     ResNet50,
     ResNet101,

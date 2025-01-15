@@ -2,10 +2,10 @@ import torch
 from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
 
-from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+from prototype_based_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
-from geometric_aware_sampling.experiments.goldilocks.weighted_sampling_buffer import (
+from prototype_based_sampling.experiments.goldilocks.weighted_sampling_buffer import (
     WeightedSamplingBuffer,
 )
 

@@ -1,10 +1,10 @@
 from avalanche.training.templates import SupervisedTemplate
 
-from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
-from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plugin import (
+from prototype_based_sampling.experiments.base_experiment import BaseExperimentStrategy
+from prototype_based_sampling.experiments.prototype_based_replay_selection.prototype_plugin import (
     GeometricPlugin,
 )
-from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
+from prototype_based_sampling.experiments.prototype_based_replay_selection.prototype_based_replay_selection_strategy import (
     RandomSamplingWithEqualClassWeights,
     InvertedDistanceWeightedSampling,
     NegativeExponentialDistanceWeighted, WithingClassMaxScatter,

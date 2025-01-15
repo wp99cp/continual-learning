@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt, cm
 from matplotlib.patches import Patch
 from torch.utils.tensorboard import SummaryWriter
 
-from geometric_aware_sampling.results.evolution_graphs.top1_accuracy_evolution_graph import (
+from prototype_based_sampling.results.evolution_graphs.top1_accuracy_evolution_graph import (
     top1_accuracy_evolution_graph,
 )
 

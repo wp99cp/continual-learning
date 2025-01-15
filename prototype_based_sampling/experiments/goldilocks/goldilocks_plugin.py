@@ -9,10 +9,10 @@ from avalanche.training.plugins import (
 from avalanche.training.templates import SupervisedTemplate
 from packaging.version import parse
 
-from geometric_aware_sampling.experiments.goldilocks.learning_rate_balanced_buffer import (
+from prototype_based_sampling.experiments.goldilocks.learning_rate_balanced_buffer import (
     LearningRateBalancedBuffer,
 )
-from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+from prototype_based_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
 

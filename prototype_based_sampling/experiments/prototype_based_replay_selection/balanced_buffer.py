@@ -7,14 +7,14 @@ from avalanche.training import BalancedExemplarsBuffer
 from avalanche.training.templates import SupervisedTemplate
 from torch.utils.data import DataLoader
 
-from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
+from prototype_based_sampling.experiments.prototype_based_replay_selection.prototype_based_replay_selection_strategy import (
     RandomSamplingWithEqualClassWeights,
     BufferSamplingStrategy,
 )
-from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+from prototype_based_sampling.experiments.goldilocks.learning_speed_plugin import (
     LearningSpeedPlugin,
 )
-from geometric_aware_sampling.experiments.goldilocks.weighted_sampling_buffer import (
+from prototype_based_sampling.experiments.goldilocks.weighted_sampling_buffer import (
     WeightedSamplingBuffer,
 )
 

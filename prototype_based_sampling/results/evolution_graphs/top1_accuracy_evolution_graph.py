@@ -1,6 +1,6 @@
 from torch.utils.tensorboard import SummaryWriter
 
-from geometric_aware_sampling.results.evolution_graphs.evolution_graph import (
+from prototype_based_sampling.results.evolution_graphs.evolution_graph import (
     get_epoch_evolution_graph,
 )
 

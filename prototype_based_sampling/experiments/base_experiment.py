@@ -8,21 +8,21 @@ from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from geometric_aware_sampling.dataset.data_loader import load_dataset
-from geometric_aware_sampling.evaluation.evaluation import get_evaluator
-from geometric_aware_sampling.experiments.geometric_aware_sampling.batch_observer_plugin import (
+from prototype_based_sampling.dataset.data_loader import load_dataset
+from prototype_based_sampling.evaluation.evaluation import get_evaluator
+from prototype_based_sampling.experiments.prototype_based_replay_selection.batch_observer_plugin import (
     BatchObserverPlugin,
 )
-from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
+from prototype_based_sampling.experiments.goldilocks.learning_speed_plugin import (
     SampleIdxPlugin,
 )
-from geometric_aware_sampling.models.model_loader import load_model
-from geometric_aware_sampling.utils.hardware_info import print_hardware_info
-from geometric_aware_sampling.utils.logged_lr_scheduler_plugin import (
+from prototype_based_sampling.models.model_loader import load_model
+from prototype_based_sampling.utils.hardware_info import print_hardware_info
+from prototype_based_sampling.utils.logged_lr_scheduler_plugin import (
     LoggedLRSchedulerPlugin,
 )
-from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
-from geometric_aware_sampling.utils.logging.tensor_board_logger import LogEnabledABC
+from prototype_based_sampling.utils.logging.settings import TENSORBOARD_DIR
+from prototype_based_sampling.utils.logging.tensor_board_logger import LogEnabledABC
 
 
 class BaseExperimentStrategy(metaclass=LogEnabledABC):

@@ -1,6 +1,6 @@
 from avalanche.training import Naive
 
-from geometric_aware_sampling.experiments.base_experiment import BaseExperimentStrategy
+from prototype_based_sampling.experiments.base_experiment import BaseExperimentStrategy
 
 
 class NaiveBaselineStrategy(BaseExperimentStrategy):

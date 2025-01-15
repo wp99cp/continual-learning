@@ -9,7 +9,7 @@ from avalanche.training import BalancedExemplarsBuffer
 from torch.masked import softmax, log_softmax
 from torch.utils.data import DataLoader
 
-from geometric_aware_sampling.models.SlimResNet18 import ResNet
+from prototype_based_sampling.models.SlimResNet18 import ResNet
 
 
 class BufferSamplingStrategy(ABC):

@@ -2,21 +2,21 @@ import datetime
 
 from torch.utils.tensorboard import SummaryWriter
 
-from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
+from prototype_based_sampling.experiments.prototype_based_replay_selection.prototype_based_replay_selection import (
     Baseline_Goldilocks_Random,
     Baseline_Random_Random,
     Baseline_Icarl_Random,
     PrototypeBased_Goldilocks_MaxScatter,
     PrototypeBased_Goldilocks_InvertedDistance, PrototypeBased_Goldilocks_ExponentialDistance,
 )
-from geometric_aware_sampling.experiments.run_experiments import run_experiments
-from geometric_aware_sampling.results.print_results import print_results
-from geometric_aware_sampling.utils.argument_parser import parse_arguments
-from geometric_aware_sampling.utils.file_handler import (
+from prototype_based_sampling.experiments.run_experiments import run_experiments
+from prototype_based_sampling.results.print_results import print_results
+from prototype_based_sampling.utils.argument_parser import parse_arguments
+from prototype_based_sampling.utils.file_handler import (
     load_results_from_pkl,
     save_results_to_pkl,
 )
-from geometric_aware_sampling.utils.logging.settings import TENSORBOARD_DIR
+from prototype_based_sampling.utils.logging.settings import TENSORBOARD_DIR
 
 
 def main():
