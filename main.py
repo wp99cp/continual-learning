@@ -3,11 +3,11 @@ import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_aware_sampling import (
-    Baseline_Goldilocks_RandomSampling,
-    Baseline_RandomSampling,
-    Baseline_Icarl_RandomSampling,
-    GeoAware_Goldilocks_WeightedSampling_Inv,
-    GeoAware_Goldilocks_WeightedSampling_Exp,
+    Baseline_Goldilocks_Random,
+    Baseline_Random_Random,
+    Baseline_Icarl_Random,
+    PrototypeBased_Goldilocks_MaxScatter,
+    PrototypeBased_Goldilocks_InvertedDistance, PrototypeBased_Goldilocks_ExponentialDistance,
 )
 from geometric_aware_sampling.experiments.run_experiments import run_experiments
 from geometric_aware_sampling.results.print_results import print_results
@@ -23,7 +23,8 @@ def main():
     args = parse_arguments()
 
     ###################################
-    # Experiment Settings and (global) Hyperparameters
+    # Experiment Settings and
+    # (global) Hyperparameters
     ###################################
 
     # if enabled we randomize the class-task mapping for every repetition
@@ -42,32 +43,22 @@ def main():
 
     # define the number of repetitions for each experiment
     # this is useful to get a more stable estimate of the performance
-    repetitions = 1
+    repetitions = 5
 
     experiments = [
-        ###################################
-        # base baselines without a buffer
-        ###################################
+        # base baselines without a ER
+        #
         # RetrainBaselineStrategy,
         # NaiveBaselineStrategy,
         #
         #
-        ###################################
-        # original paper algorithms
-        ###################################
-        # PPPLossStrategy,
-        # GoldilocksBaselineStrategy,
-        #
-        #
-        ###################################
-        # all the following baselines use the same buffer
-        # size and batch size throughout the experiments
-        ###################################
-        Baseline_RandomSampling,
-        Baseline_Goldilocks_RandomSampling,
-        Baseline_Icarl_RandomSampling,
-        GeoAware_Goldilocks_WeightedSampling_Inv,
-        GeoAware_Goldilocks_WeightedSampling_Exp,
+        # experiments used for the report
+        Baseline_Random_Random,
+        Baseline_Goldilocks_Random,
+        Baseline_Icarl_Random,
+        PrototypeBased_Goldilocks_MaxScatter,
+        PrototypeBased_Goldilocks_InvertedDistance,
+        PrototypeBased_Goldilocks_ExponentialDistance,
     ]
 
     overall_results = {}
@@ -76,7 +67,8 @@ def main():
     # Run the Experiments and Collect Results
     ###################################
 
-    if args.res_path is None:  # skip experiments if res_path is given
+    # skip experiments if res_path is given
+    if args.res_path is None:
         overall_results = run_experiments(
             experiments, repetitions, settings, randomize_class_task_mapping
         )
@@ -86,7 +78,7 @@ def main():
     ###################################
 
     now = datetime.datetime.now()
-    path = f"{TENSORBOARD_DIR}/{now.strftime("%Y-%m-%d_%H-%M")}_results"
+    path = f"{TENSORBOARD_DIR}/{now.strftime('%Y-%m-%d_%H-%M')}_results"
 
     if args.res_path is None:  # skip saving if res_path is given
         save_results_to_pkl(overall_results, path)

@@ -5,12 +5,9 @@ from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_plu
     GeometricPlugin,
 )
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
-    RandomSamplingStrategyWithEqualClassWeights,
-    DistanceWeightedSamplingStrategy,
-    DistanceWeightedScattering,
-    DistanceWeightedSamplingStrategy_KL,
-    NearestNeighborSamplingStrategy,
-    DistanceWeightedSamplingStrategyExp,
+    RandomSamplingWithEqualClassWeights,
+    InvertedDistanceWeightedSampling,
+    NegativeExponentialDistanceWeighted, WithingClassMaxScatter,
 )
 
 # full cifar100 dataset (however this is just a theoretical value)
@@ -30,24 +27,22 @@ Q = 0.40
 # this was the default before the introduction of the replay_ratio
 REPLAY_RATIO = 8.0 / 64  # that is 8 samples per mini-batch
 
-
 # for cifar100 --> floor((100 / num_tasks) * 550 / 56) * 8
 P = 1424
 
 
-class Baseline_RandomSampling(BaseExperimentStrategy):
+class Baseline_Random_Random(BaseExperimentStrategy):
     """
-    Baseline with random buffer selection and random replay sampling with
-    equal amounts of samples per class.
+    Baseline with random buffer population and random replay sampling selection
+    with equal amounts of samples per class.
     """
 
     def create_cl_strategy(self):
-
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=RandomSamplingStrategyWithEqualClassWeights,
+                    sampling_strategy=RandomSamplingWithEqualClassWeights,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     lower_quantile=0,
@@ -59,15 +54,21 @@ class Baseline_RandomSampling(BaseExperimentStrategy):
         )
 
 
-class Baseline_Goldilocks_RandomSampling(BaseExperimentStrategy):
+class Baseline_Goldilocks_Random(BaseExperimentStrategy):
+    """
+    Baseline with buffer population based on the paper
+    "Forgetting Order of Continual Learning" (Goldilocks strategy).
+
+    Replay selection based on random sampling with equal amounts of samples per class.
+
+    """
 
     def create_cl_strategy(self):
-
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=RandomSamplingStrategyWithEqualClassWeights,
+                    sampling_strategy=RandomSamplingWithEqualClassWeights,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
@@ -77,14 +78,18 @@ class Baseline_Goldilocks_RandomSampling(BaseExperimentStrategy):
         )
 
 
-class Baseline_Icarl_RandomSampling(BaseExperimentStrategy):
+class Baseline_Icarl_Random(BaseExperimentStrategy):
+    """
+    Baseline with buffer population based on iCarl strategy.
+    Replay selection based on random sampling with equal amounts of samples per class.
+    """
 
     def create_cl_strategy(self):
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=RandomSamplingStrategyWithEqualClassWeights,
+                    sampling_strategy=RandomSamplingWithEqualClassWeights,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
@@ -95,15 +100,20 @@ class Baseline_Icarl_RandomSampling(BaseExperimentStrategy):
         )
 
 
-class GeoAware_Goldilocks_WeightedSampling_Inv(BaseExperimentStrategy):
+class PrototypeBased_Goldilocks_MaxScatter(BaseExperimentStrategy):
+    """
+    Prototype based strategy with buffer population based on the paper
+    "Forgetting Order of Continual Learning" (Goldilocks strategy).
+
+    Within class selection based on the maximum scatter between prototypes.
+    """
 
     def create_cl_strategy(self):
-
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=DistanceWeightedSamplingStrategy,
+                    sampling_strategy=WithingClassMaxScatter,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
@@ -113,20 +123,51 @@ class GeoAware_Goldilocks_WeightedSampling_Inv(BaseExperimentStrategy):
         )
 
 
-class GeoAware_Goldilocks_WeightedSampling_Exp(BaseExperimentStrategy):
+class PrototypeBased_Goldilocks_InvertedDistance(BaseExperimentStrategy):
+    """
+
+    Prototype based strategy with buffer population based on the paper
+    "Forgetting Order of Continual Learning" (Goldilocks strategy).
+
+    Random within class sampling with class weights distributed by the
+    inverted distance between centroids of prototypes.
+
+    """
 
     def create_cl_strategy(self):
-
         return SupervisedTemplate(
             **self.default_settings,
             plugins=[
                 GeometricPlugin(
-                    sampling_strategy=DistanceWeightedSamplingStrategyExp,
+                    sampling_strategy=InvertedDistanceWeightedSampling,
                     replay_ratio=REPLAY_RATIO,
                     mem_size=MAX_MEMORY_SIZE,
                     q=Q,
-                    p=P,  # TODO: tune per dataset to ensure unique samples
+                    p=P,
                 ),
-                # RepresentationPlugin(),
+            ],
+        )
+
+
+class PrototypeBased_Goldilocks_ExponentialDistance(BaseExperimentStrategy):
+    """
+    Prototype based strategy with buffer population based on the paper
+    "Forgetting Order of Continual Learning" (Goldilocks strategy).
+
+    Random within class sampling with class weights distributed by the
+    negative exponential distance between centroids of prototypes.
+    """
+
+    def create_cl_strategy(self):
+        return SupervisedTemplate(
+            **self.default_settings,
+            plugins=[
+                GeometricPlugin(
+                    sampling_strategy=NegativeExponentialDistanceWeighted,
+                    replay_ratio=REPLAY_RATIO,
+                    mem_size=MAX_MEMORY_SIZE,
+                    q=Q,
+                    p=P,
+                ),
             ],
         )

@@ -20,7 +20,7 @@ class BufferSamplingStrategy(ABC):
         self.ratios = dict()
 
     def before_experience(
-        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         This method is called before a new experience is encountered.
@@ -29,11 +29,11 @@ class BufferSamplingStrategy(ABC):
         raise NotImplementedError
 
     def sample(
-        self,
-        replay_size: int,
-        _num_exps: int,
-        current_model: torch.nn.Module | None = None,
-        current_exp_dataset: AvalancheDataset = None,
+            self,
+            replay_size: int,
+            _num_exps: int,
+            current_model: torch.nn.Module | None = None,
+            current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
         """
         Sample elements from the buffer.
@@ -66,13 +66,10 @@ class BufferSamplingStrategy(ABC):
         )
 
         print(
-            f" » Thus we sample {[
-            int(replay_size * r) for r in self.ratios.values()
-        ]} samples per class for classes {[     
-            int(cls.item()) if isinstance(cls, torch.Tensor) else int(cls) for cls in self.ratios.keys()
-        ]} with replace {
-        [len(buffer) < int(replay_size * r) for r in self.ratios.values()]
-        }"
+            f" » Thus we sample {[int(replay_size * r) for r in self.ratios.values()]} "
+            f"samples per class for classes "
+            f"{[int(cls.item()) if isinstance(cls, torch.Tensor) else int(cls) for cls in self.ratios.keys()]} "
+            f"with replace {[len(buffer) < int(replay_size * r) for r in self.ratios.values()]}"
         )
 
         concatenated = concat_datasets(
@@ -112,20 +109,19 @@ class BufferSamplingStrategy(ABC):
         return buffer
 
 
-class RandomSamplingStrategyWithEqualClassWeights(BufferSamplingStrategy):
+class RandomSamplingWithEqualClassWeights(BufferSamplingStrategy):
     """
     Strategy that samples randomly from the buffer while balancing the
     number of samples per experience. This is used for baseline 1.
     """
 
     def sample(
-        self,
-        replay_size: int,
-        _num_exps: int,
-        current_model: torch.nn.Module | None = None,
-        current_exp_dataset: AvalancheDataset = None,
+            self,
+            replay_size: int,
+            _num_exps: int,
+            current_model: torch.nn.Module | None = None,
+            current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
-
         buffer = self.complete_buffer
         idxs = np.random.choice(
             len(buffer),
@@ -160,13 +156,13 @@ def get_representation(model: torch.nn.Module, dataset):
     return torch.cat(representations, dim=0)
 
 
-class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
+class InvertedDistanceWeightedSampling(BufferSamplingStrategy):
     """
     Strategy, that samples based on the inverted square distance of the prototypes
     """
 
     def before_experience(
-        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -201,7 +197,7 @@ class DistanceWeightedSamplingStrategy(BufferSamplingStrategy):
 class DistanceWeightedSamplingStrategy_KL(BufferSamplingStrategy):
 
     def before_experience(
-        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -240,13 +236,13 @@ class DistanceWeightedSamplingStrategy_KL(BufferSamplingStrategy):
             self.ratios[c] = self.ratios[c] / normalization_factor
 
 
-class DistanceWeightedSamplingStrategyExp(BufferSamplingStrategy):
+class NegativeExponentialDistanceWeighted(BufferSamplingStrategy):
     """
-    Strategy, that samples based on the inverted square distance of the prototypes
+    Strategy, that samples based on the negative exponential distance of the prototypes.
     """
 
     def before_experience(
-        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -279,13 +275,13 @@ class DistanceWeightedSamplingStrategyExp(BufferSamplingStrategy):
             self.ratios[c] = inv_dist / sum(inv_distances.values())
 
 
-class DistanceWeightedScattering(BufferSamplingStrategy):
+class WithingClassMaxScatter(BufferSamplingStrategy):
     """
-    Strategy, that samples based on the inverted square distance of the prototypes
+    Strategy, that samples based within class scatter.
     """
 
     def before_experience(
-        self, current_model: ResNet, current_exp_dataset: AvalancheDataset
+            self, current_model: ResNet, current_exp_dataset: AvalancheDataset
     ):
         """
         Computes representation means of all classes. From them, it calculates
@@ -305,13 +301,12 @@ class DistanceWeightedScattering(BufferSamplingStrategy):
 class NearestNeighborSamplingStrategy(BufferSamplingStrategy):
 
     def sample(
-        self,
-        replay_size: int,
-        _num_exps: int,
-        current_model: torch.nn.Module | None = None,
-        current_exp_dataset: AvalancheDataset = None,
+            self,
+            replay_size: int,
+            _num_exps: int,
+            current_model: torch.nn.Module | None = None,
+            current_exp_dataset: AvalancheDataset = None,
     ) -> AvalancheDataset:
-
         buffer = self.complete_buffer
 
         if not isinstance(current_model, ResNet):

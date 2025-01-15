@@ -8,7 +8,7 @@ from avalanche.training.templates import SupervisedTemplate
 from torch.utils.data import DataLoader
 
 from geometric_aware_sampling.experiments.geometric_aware_sampling.geometric_sampling_strategy import (
-    RandomSamplingStrategyWithEqualClassWeights,
+    RandomSamplingWithEqualClassWeights,
     BufferSamplingStrategy,
 )
 from geometric_aware_sampling.experiments.goldilocks.learning_speed_plugin import (
@@ -52,7 +52,7 @@ class GeometricBalancedBuffer(BalancedExemplarsBuffer[WeightedSamplingBuffer]):
         p: float = 1.0,
         sampling_strategy: Type[
             BufferSamplingStrategy
-        ] = RandomSamplingStrategyWithEqualClassWeights,
+        ] = RandomSamplingWithEqualClassWeights,
     ):
         """
         :param max_size: max number of total input samples in the replay
@@ -224,7 +224,7 @@ class GeometricBalancedBufferICarl(BalancedExemplarsBuffer[WeightedSamplingBuffe
         p: float = 1.0,
         sampling_strategy: Type[
             BufferSamplingStrategy
-        ] = RandomSamplingStrategyWithEqualClassWeights,
+        ] = RandomSamplingWithEqualClassWeights,
     ):
         """
         :param max_size: max number of total input samples in the replay
