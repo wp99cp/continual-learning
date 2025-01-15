@@ -22,7 +22,12 @@ enable_avg_over_last_5 = False
 # loop over all folders in base dir with name pattern date__*
 for folder in os.listdir(base_dir):
 
-    if "results" in folder or "logs" in folder:
+    if (
+        "results" in folder
+        or "logs" in folder
+        or "crash" in folder
+        or "first_repetition" in folder
+    ):
         continue
 
     try:
@@ -52,14 +57,17 @@ for folder in os.listdir(base_dir):
             )
 
             # [index_range : index_range + 5].mean()
-            print(f" - Mean BWT for Task{task}: {raw_bwts:.2f}")
+            print(f" - Mean BWT for Task{task}: {raw_bwts:.3f}")
             mean_btws.append(raw_bwts)
 
         mean_bwt = np.array(mean_btws).mean()
-        print(f"» Mean BWT: {mean_bwt:.2f}")
+        print(f"» Mean BWT: {mean_bwt:.3f}")
 
         if method_name not in all_bwts:
             all_bwts[method_name] = []
+
+        if math.isnan(mean_bwt):
+            continue
 
         all_bwts[method_name].append(mean_bwt)
 
