@@ -2,6 +2,7 @@
 A simple file that regenerates the confusion matrix based on the results reported to tensorboard.
 """
 
+import math
 import os
 
 import numpy as np
@@ -77,25 +78,19 @@ for folder in os.listdir(base_dir):
 
 print("\n\n++++++++++++++++++++++\nAll BWTs:")
 
-# order all_bwts in the following order: Baseline\_RandomSampling,
-#  Baseline\_Goldilocks\_RandomSampling, Baseline\_iCaRL\_RandomSampling,
-# GeoAware\_Goldilocks\_WeightedSampling\_Inv, GeoAware\_Goldilocks\_WeightedSampling\_Exp
-
-all_bwts = {
-    "Baseline_RandomSampling": all_bwts["Baseline_RandomSampling"],
-    "Baseline_Goldilocks_RandomSampling": all_bwts[
-        "Baseline_Goldilocks_RandomSampling"
-    ],
-    "Baseline_Icarl_RandomSampling": all_bwts["Baseline_Icarl_RandomSampling"],
-    "GeoAware_Goldilocks_WeightedSampling_Inv": all_bwts[
-        "GeoAware_Goldilocks_WeightedSampling_Inv"
-    ],
-    "GeoAware_Goldilocks_WeightedSampling_Exp": all_bwts[
-        "GeoAware_Goldilocks_WeightedSampling_Exp"
-    ],
-}
-
 for method_name, accs in all_bwts.items():
+
+    # Assuming accs is your array
+    accs = np.array(accs)
+
+    # Drop NaN values
+    accs = accs[~np.isnan(accs)]
+
+    # Calculate statistics
+    mean = accs.mean()
+    std = accs.std()
+    length = len(accs)
+
     print(
-        f"Method: {method_name}, Mean BWT: {np.array(accs).mean():.2f} +/- {np.array(accs).std():.2f}"
+        f"Method: {method_name}, Mean BWT: {mean:.3f} +/- {np.array(accs).std():.3f} with rep={length}"
     )
